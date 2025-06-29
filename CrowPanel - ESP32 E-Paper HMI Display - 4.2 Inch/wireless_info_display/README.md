@@ -1,4 +1,4 @@
-### Elecrow ESP32 E-Paper HMI Display - 4.2 Inch wireless_info_display example
+### Elecrow 4.2Inch ESP32 E-Paper HMI Display - wireless_info_display example
 
 
 ---
