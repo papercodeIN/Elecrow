@@ -54,7 +54,7 @@
 | TFT_CS | 15 |
 | TFT_DC | 2 |
 | TFT_RST | -1 (not connected) |
-| TFT_BL (Backlight) | 21 |
+| TFT_BL (Backlight) | 27 |
 | TOUCH_CS | 33 |
 
 | Connector | Spec |
@@ -70,17 +70,17 @@
 
 ### 1. 🕐 Military Clock - 10-OCT-2026
 
-An army-style digital clock with military green aesthetic, custom 7-segment digits, and CRT scanline effects.
+An army-style dual-timezone digital clock with military green aesthetic and custom 7-segment digits.
 
 **Features:**
-- 24-hour (military) time format with large custom 7-segment display
-- Blinking colon separator between hours and minutes
-- Seconds display in amber color
+- Dual timezone display for **IST** and **UKT**
+- UK local time uses BST/DST rules automatically
+- 12-hour or 24-hour format via `USE_12H_FORMAT`
+- Custom 7-segment digits drawn directly with TFT primitives
 - Date display (DD MMM YYYY) and day of the week
 - Day progress bar (0000–2359) with percentage complete
 - NTP time sync over WiFi (auto-updates from internet)
-- CRT/military terminal scanline overlay effect
-- Status bar showing system state and NTP sync status
+- Status bar showing NTP sync status and 12H/24H mode
 - Military green + amber color scheme on black background
 
 **Available in two versions:**
@@ -110,16 +110,16 @@ An army-style digital clock with military green aesthetic, custom 7-segment digi
    - Copy `include/secrets.example.h` to `include/secrets.h`
    - Edit `include/secrets.h` with your actual WiFi credentials
    - `secrets.h` is gitignored — your credentials stay local
-4. Set your timezone (seconds offset from UTC) in `src/main.cpp`:
-   ```cpp
-   const long GMT_OFFSET = -18000;  // EST = UTC-5 = -5*3600
-   const int  DST_OFFSET = 3600;   // 1 hour DST offset
-   ```
+4. Timezones are configured in `src/main.cpp` using POSIX timezone strings:
+    ```cpp
+    const char* TZ_IST = "IST-5:30";
+    const char* TZ_UK  = "GMT0BST,M3.5.0/1,M10.5.0/2";
+    ```
 5. **Board Configuration** (per [Elecrow Wiki](https://www.elecrow.com/wiki/CrowPanel_ESP32_2.8-inch_with_PlatformIO.html)):
    - The `platformio.ini` uses `board = esp32dev` (ESP32 Dev Module)
    - Elecrow's reference example uses `board = denky32` with a pinned platform
    - Our configuration builds and uploads successfully with `esp32dev`
-   - Key `build_flags` match the CYD 2.8" pinout (TFT pins, backlight on GPIO 21, touch CS on GPIO 33)
+    - Key `build_flags` match the CYD 2.8" pinout (TFT pins, backlight on GPIO 27, touch CS on GPIO 33)
 
 6. Build and upload:
    ```bash
@@ -174,26 +174,24 @@ An army-style digital clock with military green aesthetic, custom 7-segment digi
    - If it stays at `Connecting...` for a long time: **hold the BOOT button** on the board, release once writing begins
    - If still fails, re-check the COM port selection
 
-7. **Set your timezone** in `MilitaryClock.ino` (line 9)
+7. Timezones are already configured in `MilitaryClock.ino` for IST and UKT
 8. Open **Serial Monitor** and set baud rate to **115200** to verify
 
 ---
 
-## ⏰ Common Timezone Offsets
+## ⏰ Timezone Configuration
 
-| Timezone | GMT_OFFSET (seconds) |
-|---------:|:---------------------|
-| UTC | 0 |
-| EST (UTC-5) | -18000 |
-| CST (UTC-6) | -21600 |
-| MST (UTC-7) | -25200 |
-| PST (UTC-8) | -28800 |
-| IST (UTC+5:30) | 19800 |
-| CET (UTC+1) | 3600 |
-| JST (UTC+9) | 32400 |
-| AEST (UTC+10) | 36000 |
+The clock syncs UTC from NTP, then converts it locally using POSIX timezone strings.
 
-> Set `DST_OFFSET = 3600` if your region observes daylight saving time, otherwise set it to `0`.
+| Display | POSIX TZ String | Notes |
+|--------:|:----------------|:------|
+| IST | `IST-5:30` | India Standard Time, UTC+5:30 |
+| UKT | `GMT0BST,M3.5.0/1,M10.5.0/2` | UK local time with BST/DST rules |
+
+Set the display mode with:
+```cpp
+#define USE_12H_FORMAT  1  // 1 = 12H, 0 = 24H
+```
 
 ---
 
@@ -225,12 +223,12 @@ CrowPanel - ESP32 HMI Display - 2.8 Inch/
 
 | Issue | Solution |
 |------:|:---------|
-| Blank screen | Verify pin mapping matches your board version. Check `TFT_BL` pin 21 is set. |
+| Blank screen | Verify pin mapping matches your board version. Check `TFT_BL` pin 27 is set. |
 | No WiFi connection | Double-check SSID/password. The board only supports **2.4GHz** networks. |
-| Wrong time displayed | Adjust `GMT_OFFSET` for your timezone. See timezone table above. |
+| Wrong time displayed | Check NTP sync in Serial Monitor and verify the POSIX timezone strings. |
 | Upload fails | Hold **BOOT** button while uploading. Try lower upload speed (115200). |
 | TFT_eSPI compile errors (Arduino) | Make sure you replaced `User_Setup.h` in the TFT_eSPI library folder. |
-| Touch not working | Ensure `TOUCH_CS = 33` is set. Use the resistive pen included in the box. |
+| Touch not working | Touch is not used by the Military Clock UI. `TOUCH_CS = 33` is kept for board config only. |
 
 ---
 
