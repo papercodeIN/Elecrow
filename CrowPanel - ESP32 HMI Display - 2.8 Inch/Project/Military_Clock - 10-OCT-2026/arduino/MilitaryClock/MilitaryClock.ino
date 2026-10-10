@@ -4,8 +4,7 @@
 #include "secrets.h"
 
 const char* NTP_SERVER = "pool.ntp.org";
-const char* TZ_IST = "IST-5:30";
-const char* TZ_UK  = "GMT0BST,M3.5.0/1,M10.5.0/2";
+const long IST_OFFSET_SECONDS = 19800;
 
 TFT_eSPI tft = TFT_eSPI();
 TFT_eSprite timeSprite = TFT_eSprite(&tft);
@@ -128,20 +127,57 @@ void drawBorder() {
   tft.drawRect(1, 31, 318, 183, DIM_GREEN);
 }
 
+long getUkOffsetSeconds(time_t utcNow);
+
 bool getZonedTimes(struct tm &istTime, struct tm &ukTime) {
   time_t now = time(nullptr);
   if (now < 100000) {
     return false;
   }
 
-  setenv("TZ", TZ_IST, 1);
-  tzset();
-  localtime_r(&now, &istTime);
-
-  setenv("TZ", TZ_UK, 1);
-  tzset();
-  localtime_r(&now, &ukTime);
+  time_t istNow = now + IST_OFFSET_SECONDS;
+  time_t ukNow = now + getUkOffsetSeconds(now);
+  gmtime_r(&istNow, &istTime);
+  gmtime_r(&ukNow, &ukTime);
   return true;
+}
+
+long daysFromCivil(int year, unsigned month, unsigned day) {
+  year -= month <= 2;
+  const int era = (year >= 0 ? year : year - 399) / 400;
+  const unsigned yoe = (unsigned)(year - era * 400);
+  const unsigned doy = (153 * (month + (month > 2 ? -3 : 9)) + 2) / 5 + day - 1;
+  const unsigned doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+  return era * 146097L + (long)doe - 719468L;
+}
+
+time_t utcTimestamp(int year, unsigned month, unsigned day, unsigned hour) {
+  return (time_t)(daysFromCivil(year, month, day) * 86400L + hour * 3600L);
+}
+
+int weekdayUtc(int year, unsigned month, unsigned day) {
+  long days = daysFromCivil(year, month, day);
+  return (int)((days + 4) % 7 + 7) % 7;
+}
+
+unsigned lastSundayOfMonth(int year, unsigned month) {
+  unsigned lastDay = month == 2 ? 28 : (month == 4 || month == 6 || month == 9 || month == 11 ? 30 : 31);
+  if (month == 2 && ((year % 4 == 0 && year % 100 != 0) || year % 400 == 0)) {
+    lastDay = 29;
+  }
+
+  int weekday = weekdayUtc(year, month, lastDay);
+  return lastDay - weekday;
+}
+
+long getUkOffsetSeconds(time_t utcNow) {
+  struct tm utcTime;
+  gmtime_r(&utcNow, &utcTime);
+  int year = utcTime.tm_year + 1900;
+
+  time_t bstStart = utcTimestamp(year, 3, lastSundayOfMonth(year, 3), 1);
+  time_t bstEnd = utcTimestamp(year, 10, lastSundayOfMonth(year, 10), 1);
+  return (utcNow >= bstStart && utcNow < bstEnd) ? 3600 : 0;
 }
 
 void formatClockTime(struct tm &t, char *timeBuf, char *periodBuf) {
