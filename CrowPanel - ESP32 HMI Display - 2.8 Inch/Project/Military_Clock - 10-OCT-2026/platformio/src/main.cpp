@@ -5,8 +5,8 @@
 #include "secrets.h"
 
 const char* NTP_SERVER = "pool.ntp.org";
-const long  GMT_OFFSET = 19800;
-const int   DST_OFFSET = 0;
+const char* TZ_IST = "IST-5:30";
+const char* TZ_UK  = "GMT0BST,M3.5.0/1,M10.5.0/2";
 
 TFT_eSPI tft = TFT_eSPI();
 TFT_eSprite timeSprite = TFT_eSprite(&tft);
@@ -66,137 +66,185 @@ void drawColon(TFT_eSprite &spr, int x, int y, int h, int dotSize, uint32_t colo
   spr.fillRect(x, y + 3 * quarter - dotSize / 2, dotSize, dotSize, color);
 }
 
+void drawTftDigit(int x, int y, int digit, int w, int h, int thick, uint32_t color) {
+  uint8_t seg = SEGMENT_MAP[digit];
+  int halfH = h / 2;
+
+  if (seg & 0x01) tft.fillRect(x + thick / 2, y, w - thick, thick, color);
+  if (seg & 0x02) tft.fillRect(x + w - thick, y + thick / 2, thick, halfH - thick, color);
+  if (seg & 0x04) tft.fillRect(x + w - thick, y + halfH + thick / 2, thick, halfH - thick, color);
+  if (seg & 0x08) tft.fillRect(x + thick / 2, y + h - thick, w - thick, thick, color);
+  if (seg & 0x10) tft.fillRect(x, y + halfH + thick / 2, thick, halfH - thick, color);
+  if (seg & 0x20) tft.fillRect(x, y + thick / 2, thick, halfH - thick, color);
+  if (seg & 0x40) tft.fillRect(x + thick / 2, y + halfH - thick / 2, w - thick, thick, color);
+}
+
+void drawTftColon(int x, int y, int h, int dotSize, uint32_t color) {
+  int quarter = h / 4;
+  tft.fillRect(x, y + quarter - dotSize / 2, dotSize, dotSize, color);
+  tft.fillRect(x, y + 3 * quarter - dotSize / 2, dotSize, dotSize, color);
+}
+
 void drawHeader() {
   tft.fillRect(0, 0, 320, 28, HEADER_BG);
   tft.drawFastHLine(0, 28, 320, ARMY_GREEN);
   tft.drawFastHLine(0, 29, 320, ARMY_GREEN);
 
+  const int headerTextY = 5;
+
   tft.setFreeFont(&FreeMono9pt7b);
-  tft.setTextDatum(ML_DATUM);
+  tft.setTextDatum(TL_DATUM);
   if (ntpSynced) {
     tft.setTextColor(ARMY_GREEN, HEADER_BG);
-    tft.drawString("NTP:OK", 8, 14);
+    tft.drawString("NTP:OK", 6, headerTextY);
   } else {
     tft.setTextColor(ARMY_AMBER, HEADER_BG);
-    tft.drawString("NTP:WAIT", 8, 14);
+    tft.drawString("NTP:WAIT", 6, headerTextY);
   }
 
   tft.setTextColor(ARMY_GREEN, HEADER_BG);
   tft.setFreeFont(&FreeSansBold9pt7b);
   tft.setTextDatum(MC_DATUM);
-  tft.drawString("[ TIME ]", 160, 14);
+  tft.drawString("TIME", 170, 14);
 
   tft.setTextColor(ARMY_AMBER, HEADER_BG);
   tft.setFreeFont(&FreeMono9pt7b);
   tft.setTextDatum(TR_DATUM);
-  tft.drawString(use12h ? "12H" : "24H", 312, 14);
+  tft.drawString(use12h ? "12H" : "24H", 314, headerTextY);
 }
 
 void drawFooter() {
-  tft.fillRect(0, 140, 320, 25, HEADER_BG);
-  tft.drawFastHLine(0, 140, 320, ARMY_GREEN);
-  tft.drawFastHLine(0, 141, 320, ARMY_GREEN);
+  tft.fillRect(0, 215, 320, 25, HEADER_BG);
+  tft.drawFastHLine(0, 215, 320, ARMY_GREEN);
+  tft.drawFastHLine(0, 216, 320, ARMY_GREEN);
 
   tft.setTextColor(DIM_GREEN, HEADER_BG);
   tft.setFreeFont(&FreeMono9pt7b);
   tft.setTextDatum(MC_DATUM);
-  tft.drawString(ipAddress, 160, 153);
+  tft.drawString(ipAddress, 160, 228);
 }
 
 void drawBorder() {
-  tft.drawRect(0, 30, 320, 100, DIM_GREEN);
-  tft.drawRect(1, 31, 318, 98, DIM_GREEN);
+  tft.drawRect(0, 30, 320, 185, DIM_GREEN);
+  tft.drawRect(1, 31, 318, 183, DIM_GREEN);
 }
 
-void renderTime(struct tm &t) {
-  timeSprite.fillSprite(BG_COLOR);
+bool getZonedTimes(struct tm &istTime, struct tm &ukTime) {
+  time_t now = time(nullptr);
+  if (now < 100000) {
+    return false;
+  }
 
+  setenv("TZ", TZ_IST, 1);
+  tzset();
+  localtime_r(&now, &istTime);
+
+  setenv("TZ", TZ_UK, 1);
+  tzset();
+  localtime_r(&now, &ukTime);
+  return true;
+}
+
+void formatClockTime(struct tm &t, char *timeBuf, char *periodBuf) {
   int h = t.tm_hour;
-  int m = t.tm_min;
+  periodBuf[0] = '\0';
 
-  bool isPM = false;
   if (use12h) {
-    isPM = h >= 12;
+    bool isPM = h >= 12;
     if (h == 0) h = 12;
     else if (h > 12) h -= 12;
+    sprintf(timeBuf, "%d:%02d", h, t.tm_min);
+    strcpy(periodBuf, isPM ? "PM" : "AM");
+  } else {
+    sprintf(timeBuf, "%02d:%02d", h, t.tm_min);
   }
-
-  int digitW = 26;
-  int digitH = 40;
-  int thick  = 4;
-  int gap    = 2;
-
-  int startX = (320 - (digitW * 4 + gap * 3 + 16)) / 2;
-
-  timeSprite.setTextColor(ARMY_GREEN, BG_COLOR);
-  timeSprite.setFreeFont(&FreeMono9pt7b);
-  timeSprite.setTextDatum(ML_DATUM);
-  timeSprite.drawString("IST", startX - 25, 20);
-
-  drawDigit(timeSprite, startX, 2, h / 10, digitW, digitH, thick, ARMY_GREEN);
-  drawDigit(timeSprite, startX + digitW + gap, 2, h % 10, digitW, digitH, thick, ARMY_GREEN);
-
-  drawColon(timeSprite, startX + digitW * 2 + gap * 2 + 2, 2, digitH, 6, ARMY_GREEN);
-
-  int colonW = 10;
-  int offsetX = startX + digitW * 2 + gap * 2 + colonW + 2;
-
-  drawDigit(timeSprite, offsetX, 2, m / 10, digitW, digitH, thick, ARMY_GREEN);
-  drawDigit(timeSprite, offsetX + digitW + gap, 2, m % 10, digitW, digitH, thick, ARMY_GREEN);
-
-  if (use12h) {
-    timeSprite.setTextColor(ARMY_AMBER, BG_COLOR);
-    timeSprite.setFreeFont(&FreeMono9pt7b);
-    timeSprite.setTextDatum(MC_DATUM);
-    timeSprite.drawString(isPM ? "PM" : "AM", startX + digitW * 4 + gap * 3 + colonW + 12, 21);
-  }
-
-  int londonMin = h * 60 + m - 330;
-  if (londonMin < 0) londonMin += 1440;
-  if (londonMin >= 1440) londonMin -= 1440;
-  int lh = londonMin / 60;
-  int lm = londonMin % 60;
-
-  bool lPM = false;
-  if (use12h) {
-    lPM = lh >= 12;
-    if (lh == 0) lh = 12;
-    else if (lh > 12) lh -= 12;
-  }
-
-  timeSprite.setTextColor(DIM_GREEN, BG_COLOR);
-  timeSprite.setFreeFont(&FreeMono9pt7b);
-  timeSprite.setTextDatum(ML_DATUM);
-  timeSprite.drawString("LON", startX - 25, 48);
-
-  drawDigit(timeSprite, startX, 30, lh / 10, digitW, digitH, thick, DIM_GREEN);
-  drawDigit(timeSprite, startX + digitW + gap, 30, lh % 10, digitW, digitH, thick, DIM_GREEN);
-
-  drawColon(timeSprite, startX + digitW * 2 + gap * 2 + 2, 30, digitH, 6, DIM_GREEN);
-
-  drawDigit(timeSprite, offsetX, 30, lm / 10, digitW, digitH, thick, DIM_GREEN);
-  drawDigit(timeSprite, offsetX + digitW + gap, 30, lm % 10, digitW, digitH, thick, DIM_GREEN);
-
-  if (use12h) {
-    timeSprite.setTextColor(ARMY_AMBER, BG_COLOR);
-    timeSprite.setFreeFont(&FreeMono9pt7b);
-    timeSprite.setTextDatum(MC_DATUM);
-    timeSprite.drawString(lPM ? "PM" : "AM", startX + digitW * 4 + gap * 3 + colonW + 12, 49);
-  }
-
-  timeSprite.pushSprite(0, 35);
 }
 
-void renderDate(struct tm &t) {
-  tft.fillRect(10, 85, 300, 25, BG_COLOR);
+void drawTimeColumn(int centerX, const char *label, struct tm &t, uint32_t color) {
+  char periodBuf[3];
+  int h = t.tm_hour;
+  periodBuf[0] = '\0';
+
+  if (use12h) {
+    bool isPM = h >= 12;
+    if (h == 0) h = 12;
+    else if (h > 12) h -= 12;
+    strcpy(periodBuf, isPM ? "PM" : "AM");
+  }
+
+  int digitW = 22;
+  int digitH = 38;
+  int thick = 4;
+  int gap = 3;
+  int colonW = 8;
+  int totalW = digitW * 4 + gap * 3 + colonW;
+  int x = centerX - totalW / 2;
+  int y = 61;
 
   tft.setTextColor(ARMY_AMBER, BG_COLOR);
   tft.setFreeFont(&FreeMono9pt7b);
   tft.setTextDatum(TC_DATUM);
-  tft.drawString(dayNames[t.tm_wday], 160, 88);
+  tft.drawString(label, centerX, 38);
+
+  drawTftDigit(x, y, h / 10, digitW, digitH, thick, color);
+  drawTftDigit(x + digitW + gap, y, h % 10, digitW, digitH, thick, color);
+  drawTftColon(x + digitW * 2 + gap * 2, y, digitH, 5, color);
+  drawTftDigit(x + digitW * 2 + gap * 2 + colonW, y, t.tm_min / 10, digitW, digitH, thick, color);
+  drawTftDigit(x + digitW * 3 + gap * 3 + colonW, y, t.tm_min % 10, digitW, digitH, thick, color);
+
+  if (use12h) {
+    tft.setTextColor(ARMY_AMBER, BG_COLOR);
+    tft.setFreeFont(&FreeMono9pt7b);
+    tft.setTextDatum(TC_DATUM);
+    tft.drawString(periodBuf, centerX, 112);
+  }
+}
+
+void renderTime(struct tm &istTime, struct tm &ukTime) {
+  tft.fillRect(2, 32, 316, 95, BG_COLOR);
+  tft.drawFastVLine(160, 38, 82, GRID_COLOR);
+  drawTimeColumn(80, "IST", istTime, ARMY_GREEN);
+  drawTimeColumn(240, "UKT", ukTime, DIM_GREEN);
+}
+
+void renderDate(struct tm &t) {
+  tft.fillRect(10, 130, 300, 35, BG_COLOR);
+
+  tft.setTextColor(ARMY_AMBER, BG_COLOR);
+  tft.setFreeFont(&FreeMono9pt7b);
+  tft.setTextDatum(TC_DATUM);
+  tft.drawString(dayNames[t.tm_wday], 160, 132);
+
+  tft.setTextColor(ARMY_GREEN, BG_COLOR);
+  tft.setFreeFont(&FreeSansBold9pt7b);
+  tft.setTextDatum(TC_DATUM);
+
+  char dateBuf[32];
+  sprintf(dateBuf, "%02d %s %04d", t.tm_mday, monthNames[t.tm_mon], t.tm_year + 1900);
+  tft.drawString(dateBuf, 160, 152);
 }
 
 void renderProgressBar(struct tm &t) {
+  int barY = 170;
+  int barH = 8;
+  int barW = 280;
+  int barX = 20;
+
+  float progress = (t.tm_hour * 3600 + t.tm_min * 60 + t.tm_sec) / 86400.0;
+  int fillW = (int)(barW * progress);
+
+  tft.drawRect(barX - 1, barY - 1, barW + 2, barH + 2, DIM_GREEN);
+  tft.fillRect(barX, barY, fillW, barH, ARMY_GREEN);
+  tft.fillRect(barX + fillW, barY, barW - fillW, barH, GRID_COLOR);
+
+  tft.setTextColor(DIM_GREEN, BG_COLOR);
+  tft.setFreeFont(&FreeMono9pt7b);
+  tft.setTextDatum(TC_DATUM);
+
+  char pctBuf[8];
+  sprintf(pctBuf, "%d%%", (int)(progress * 100));
+  tft.fillRect(130, 182, 60, 16, BG_COLOR);
+  tft.drawString(pctBuf, 160, 185);
 }
 
 void setup() {
@@ -224,7 +272,7 @@ void setup() {
   if (WiFi.status() == WL_CONNECTED) {
     ipAddress = WiFi.localIP().toString();
     Serial.printf("WiFi connected! IP: %s\n", ipAddress.c_str());
-    configTime(GMT_OFFSET, DST_OFFSET, NTP_SERVER);
+    configTime(0, 0, NTP_SERVER);
     struct tm t;
     if (getLocalTime(&t, 10000)) {
       ntpSynced = true;
@@ -246,7 +294,7 @@ void setup() {
   delay(100);
   Serial.println("TFT config done");
 
-  timeSprite.createSprite(320, 120);
+  timeSprite.createSprite(320, 100);
   Serial.println("Time sprite created");
 
   drawHeader();
@@ -254,19 +302,22 @@ void setup() {
   drawFooter();
   Serial.println("UI drawn");
 
-  struct tm t;
-  if (getLocalTime(&t)) {
-    renderTime(t);
-    renderDate(t);
-    lastMin = t.tm_min;
+  struct tm istTime;
+  struct tm ukTime;
+  if (getZonedTimes(istTime, ukTime)) {
+    renderTime(istTime, ukTime);
+    renderDate(istTime);
+    renderProgressBar(istTime);
+    lastMin = istTime.tm_min;
   }
 
   Serial.println("Setup completed successfully!");
 }
 
 void loop() {
-  struct tm t;
-  if (!getLocalTime(&t, 1000)) {
+  struct tm istTime;
+  struct tm ukTime;
+  if (!getZonedTimes(istTime, ukTime)) {
     delay(1000);
     return;
   }
@@ -280,10 +331,11 @@ void loop() {
     drawHeader();
   }
 
-  if (lastMin == -1 || t.tm_min != lastMin) {
-    renderTime(t);
-    renderDate(t);
-    lastMin = t.tm_min;
+  if (lastMin == -1 || istTime.tm_min != lastMin) {
+    renderTime(istTime, ukTime);
+    renderDate(istTime);
+    renderProgressBar(istTime);
+    lastMin = istTime.tm_min;
   }
 
   delay(1000);
