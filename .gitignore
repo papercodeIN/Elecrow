@@ -3,3 +3,4 @@ CrowPanel - ESP32 HMI Display - 7 Inch/CrowPanel-7.0-Arduino.7z
 CrowPanel - ESP32 HMI Display - 7 Inch/CrowPanel-7.0-Arduino/libraries.zip
 
 **/.pio/
+**/secrets.h

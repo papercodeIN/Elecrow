@@ -106,12 +106,11 @@ An army-style digital clock with military green aesthetic, custom 7-segment digi
 
 1. Install [PlatformIO](https://platformio.org/) via pip or VS Code extension
 2. Open the `platformio/` folder as a project
-3. Edit WiFi credentials in `src/main.cpp`:
-   ```cpp
-   const char* WIFI_SSID     = "YOUR_WIFI_SSID";
-   const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
-   ```
-4. Set your timezone (seconds offset from UTC):
+3. **Configure WiFi credentials** (one-time setup):
+   - Copy `include/secrets.example.h` to `include/secrets.h`
+   - Edit `include/secrets.h` with your actual WiFi credentials
+   - `secrets.h` is gitignored — your credentials stay local
+4. Set your timezone (seconds offset from UTC) in `src/main.cpp`:
    ```cpp
    const long GMT_OFFSET = -18000;  // EST = UTC-5 = -5*3600
    const int  DST_OFFSET = 3600;   // 1 hour DST offset
@@ -146,7 +145,12 @@ An army-style digital clock with military green aesthetic, custom 7-segment digi
      C:\Users\<YourUser>\Documents\Arduino\libraries\TFT_eSPI\User_Setup.h
      ```
 
-4. **Board Settings in Arduino IDE**
+4. **Configure WiFi credentials** (one-time setup):
+   - Copy `arduino/MilitaryClock/secrets.example.h` to `arduino/MilitaryClock/secrets.h`
+   - Edit `arduino/MilitaryClock/secrets.h` with your actual WiFi credentials
+   - `secrets.h` is gitignored — your credentials stay local
+
+5. **Board Settings in Arduino IDE**
 
    | Setting | Value |
    |--------:|:------|
@@ -157,8 +161,7 @@ An army-style digital clock with military green aesthetic, custom 7-segment digi
    | Partition Scheme | Default 4MB with spiffs |
    | Port | (Select your COM port) |
 
-5. **Edit WiFi credentials** in `MilitaryClock.ino` (lines 5-6)
-6. **Set your timezone** (line 9)
+6. **Set your timezone** in `MilitaryClock.ino` (line 9)
 7. Click **Upload**
 
 ---
@@ -193,12 +196,14 @@ CrowPanel - ESP32 HMI Display - 2.8 Inch/
         │   ├── src/
         │   │   └── main.cpp
         │   ├── include/
+        │   │   └── secrets.example.h   (copy to secrets.h, edit credentials)
         │   ├── lib/
         │   └── test/
         └── arduino/
             └── MilitaryClock/
                 ├── MilitaryClock.ino
-                └── User_Setup.h
+                ├── User_Setup.h
+                └── secrets.example.h   (copy to secrets.h, edit credentials)
 ```
 
 ---

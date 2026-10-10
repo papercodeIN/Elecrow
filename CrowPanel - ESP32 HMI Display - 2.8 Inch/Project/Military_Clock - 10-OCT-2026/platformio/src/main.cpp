@@ -2,9 +2,7 @@
 #include <WiFi.h>
 #include <TFT_eSPI.h>
 #include <time.h>
-
-const char* WIFI_SSID     = "YOUR_WIFI_SSID";
-const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
+#include "secrets.h"
 
 const char* NTP_SERVER = "pool.ntp.org";
 const long  GMT_OFFSET = -18000;
