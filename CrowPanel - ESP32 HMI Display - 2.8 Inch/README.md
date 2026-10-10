@@ -115,11 +115,17 @@ An army-style digital clock with military green aesthetic, custom 7-segment digi
    const long GMT_OFFSET = -18000;  // EST = UTC-5 = -5*3600
    const int  DST_OFFSET = 3600;   // 1 hour DST offset
    ```
-5. Build and upload:
+5. **Board Configuration** (per [Elecrow Wiki](https://www.elecrow.com/wiki/CrowPanel_ESP32_2.8-inch_with_PlatformIO.html)):
+   - The `platformio.ini` uses `board = esp32dev` (ESP32 Dev Module)
+   - Elecrow's reference example uses `board = denky32` with a pinned platform
+   - Our configuration builds and uploads successfully with `esp32dev`
+   - Key `build_flags` match the CYD 2.8" pinout (TFT pins, backlight on GPIO 21, touch CS on GPIO 33)
+
+6. Build and upload:
    ```bash
    pio run -t upload
    ```
-6. Monitor serial output:
+7. Monitor serial output:
    ```bash
    pio device monitor
    ```
@@ -132,7 +138,7 @@ An army-style digital clock with military green aesthetic, custom 7-segment digi
      ```
      https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
      ```
-   - Go to `Tools > Board > Boards Manager`, search **esp32** by Espressif, and install
+   - Go to `Tools > Board > Boards Manager`, search **esp32** by Espressif Systems, and install **v3.3.8**
 
 2. **Install TFT_eSPI Library**
    - Go to `Sketch > Include Library > Manage Libraries`
@@ -150,19 +156,26 @@ An army-style digital clock with military green aesthetic, custom 7-segment digi
    - Edit `arduino/MilitaryClock/secrets.h` with your actual WiFi credentials
    - `secrets.h` is gitignored — your credentials stay local
 
-5. **Board Settings in Arduino IDE**
+5. **Board Settings in Arduino IDE** (per [Elecrow Wiki](https://www.elecrow.com/wiki/ESP32-Display-28-inch-HMI-Arduino-Tutorial.html))
 
    | Setting | Value |
    |--------:|:------|
-   | Board | ESP32 Dev Module |
-   | Upload Speed | 921600 |
-   | Flash Frequency | 80MHz |
-   | Flash Size | 4MB |
-   | Partition Scheme | Default 4MB with spiffs |
+   | Board | **ESP32-WROOM-DA Module** |
+   | Upload Speed | Default (921600) |
+   | Flash Frequency | Default (80MHz) |
+   | Flash Size | Default (4MB / 32Mb) |
+   | Partition Scheme | Default (Default 4MB with spiffs) |
    | Port | (Select your COM port) |
 
-6. **Set your timezone** in `MilitaryClock.ino` (line 9)
-7. Click **Upload**
+   > **Important**: Keep all other Tools menu options at their **default values**. Selecting **ESP32-WROOM-DA Module** is critical — "ESP32 Dev Module" will not work correctly with this board.
+
+6. **Upload Procedure**
+   - Click **Upload** and wait for write progress
+   - If it stays at `Connecting...` for a long time: **hold the BOOT button** on the board, release once writing begins
+   - If still fails, re-check the COM port selection
+
+7. **Set your timezone** in `MilitaryClock.ino` (line 9)
+8. Open **Serial Monitor** and set baud rate to **115200** to verify
 
 ---
 
