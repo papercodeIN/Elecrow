@@ -5,8 +5,8 @@
 #include "secrets.h"
 
 const char* NTP_SERVER = "pool.ntp.org";
-const long  GMT_OFFSET = -18000;
-const int   DST_OFFSET = 3600;
+const long  GMT_OFFSET = 19800;
+const int   DST_OFFSET = 0;
 
 TFT_eSPI tft = TFT_eSPI();
 TFT_eSprite timeSprite  = TFT_eSprite(&tft);
