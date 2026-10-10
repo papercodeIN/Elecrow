@@ -219,6 +219,41 @@ CrowPanel - ESP32 HMI Display - 2.8 Inch/
 
 ---
 
+## 🧠 Future Plan: Desk Buddy Dashboard
+
+This board can be extended into a Tinytosh-inspired desk buddy/dashboard using the Elecrow 2.8" ESP32 TFT display.
+
+Reference project:
+- [Tinytosh by VladimirGitsarev](https://github.com/VladimirGitsarev/Tinytosh)
+
+Tinytosh is designed for an ESP32-C3 with a small OLED, so it cannot be flashed directly to this board. However, the same ideas can be adapted for this larger 320x240 ILI9341 TFT display.
+
+Planned/possible features:
+- Modular rotating dashboard screens
+- Internet clock and calendar
+- Weather via Open-Meteo
+- Air quality
+- Sunrise/sunset/daylight info
+- Moon phase display
+- Crypto, stock, and currency trackers
+- PC hardware monitor via USB/WiFi bridge
+- PC media display
+- Local web configuration panel
+- mDNS access such as `deskbuddy.local`
+- Night mode and brightness control
+- Animated desk buddy face/mood screen
+- MQTT/Home Assistant style status screens
+
+Recommended implementation approach:
+- Keep the existing TFT_eSPI display stack
+- Build a lightweight screen manager
+- Store settings with ESP32 Preferences
+- Fetch data with scheduled non-blocking intervals
+- Draw directly to the TFT or use small partial sprites only where needed
+- Avoid a direct Tinytosh port because the display, hardware, and UI assumptions are different
+
+---
+
 ## 🔧 Troubleshooting
 
 | Issue | Solution |
