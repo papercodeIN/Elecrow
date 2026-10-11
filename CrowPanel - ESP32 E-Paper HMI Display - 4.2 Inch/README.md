@@ -1,5 +1,4 @@
-# Elecrow CrowPanel - ESP32 4.2" E-Paper HMI Display
-
+<h1 align = "center">🌟Elecrow CrowPanel - ESP32 4.2" E-Paper HMI DisplayF🌟</h1>
 
 ---
 <p align="center">
