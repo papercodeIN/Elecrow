@@ -166,10 +166,10 @@ void handleRoot() {
 }
 
 void handleApiStatus() {
-  StaticJsonDocument<1024> doc;
-  JsonArray rows = doc.createNestedArray("rows");
+  JsonDocument doc;
+  JsonArray rows = doc["rows"].to<JsonArray>();
   for (int i = 0; i < currentSettings.MAX_ROWS; i++) {
-    JsonObject row = rows.createNestedObject();
+    JsonObject row = rows.add<JsonObject>();
     row["text"] = currentSettings.rows[i].text;
     row["fontSize"] = currentSettings.rows[i].fontSize;
   }
@@ -186,7 +186,7 @@ void handleApiUpdate() {
     server.send(400, "application/json", "{\"error\":\"No data received\"}");
     return;
   }
-  StaticJsonDocument<1024> doc;
+  JsonDocument doc;
   DeserializationError error = deserializeJson(doc, server.arg("plain"));
   if (error) {
     server.send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
