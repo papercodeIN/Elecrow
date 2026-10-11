@@ -134,10 +134,12 @@ void Update_Display() {
   time_t t_ist = t + (time_t)TIMEZONE_IST_OFFSET_SEC;
   struct tm ist_info;
   gmtime_r(&t_ist, &ist_info);
+  ist_info.tm_wday = (int)((t_ist / 86400 + 4) % 7);
 
   time_t t_ukt = t + (time_t)TIMEZONE_LONDON_OFFSET_SEC;
   struct tm ukt_info;
   gmtime_r(&t_ukt, &ukt_info);
+  ukt_info.tm_wday = (int)((t_ukt / 86400 + 4) % 7);
 
   Serial.println("----------The screen time display is about to refresh----------");
   delay(1000);
@@ -157,7 +159,7 @@ void Update_Display() {
   formatTime12(&ist_info, istTimeBuf, istAmpmBuf);
   formatTime12(&ukt_info, uktTimeBuf, uktAmpmBuf);
 
-  const char *daysOfWeek[] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+  const char *daysOfWeek[] = {"SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"};
   const char *dayOfWeek = daysOfWeek[ist_info.tm_wday];
 
   Paint_NewImage(ImageBW, EPD_W, EPD_H, 0, WHITE);

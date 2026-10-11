@@ -1,0 +1,41 @@
+#ifndef CONFIG_H
+#define CONFIG_H
+
+#define DEVICE_NAME "EPaper-Display"
+#define AP_PASSWORD "display123"
+
+#define DISPLAY_WIDTH 400
+#define DISPLAY_HEIGHT 300
+#define DISPLAY_MARGIN 10
+
+#define EPD_INIT_BAUD_RATE 115200
+#define EPD_INIT_RESET true
+#define EPD_INIT_DELAY 50
+#define EPD_INIT_PARTIAL false
+
+#define WEB_SERVER_PORT 80
+#define WIFI_CONNECT_TIMEOUT 30
+#define WIFI_RETRY_DELAY 1000
+#define WIFI_RECONNECT_INTERVAL 30000
+
+#define MAX_TEXT_LENGTH 30
+#define IP_DISPLAY_DURATION 5000
+#define LOOP_DELAY 10
+
+#define FONT_SIZE_SMALL 12
+#define FONT_SIZE_MEDIUM 18
+#define FONT_SIZE_LARGE 24
+
+#define ROW_HEIGHT_SMALL 32
+#define ROW_HEIGHT_MEDIUM 40
+#define ROW_HEIGHT_LARGE 48
+
+#define PIN_PWR 7
+#define PIN_BUSY 48
+#define PIN_RES 47
+#define PIN_DC 46
+#define PIN_CS 45
+
+#endif
+
+</content>
