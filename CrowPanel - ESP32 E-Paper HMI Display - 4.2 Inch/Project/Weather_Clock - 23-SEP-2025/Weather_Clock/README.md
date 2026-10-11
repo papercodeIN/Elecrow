@@ -55,7 +55,7 @@ No additional third-party libraries are needed. The EPD driver files (`EPD.h`, `
 - WiFi auto-reconnect with exponential backoff
 - NTP time synchronization
 - HTTP response validation and JSON parse error handling with retry logic
-- Deep sleep between updates for power management
+- Continuous update loop with 60-second refresh interval
 - Partial e-paper refresh support
 - Modular code structure
 

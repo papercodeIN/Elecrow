@@ -1,6 +1,7 @@
 #include "networking.h"
 
 void syncTimeFromNTP();
+void drawStaticElements();
 
 #include <WiFi.h>
 #include <HTTPClient.h>
@@ -10,7 +11,6 @@ void syncTimeFromNTP();
 #include "config.h"
 
 #include <time.h>
-#include <esp_sleep.h>
 
 #include "EPD_Init.h"
 #define EPD_IMAGE_BUFFER_SIZE ((EPD_W * EPD_H) / 8)
@@ -37,6 +37,14 @@ void syncTimeFromNTP() {
   }
 }
 
+void drawStaticElements() {
+  EPD_DrawLine(0, POS_DIVIDER_Y, EPD_W, POS_DIVIDER_Y, BLACK);
+  EPD_ShowPicture(POS_TEMP_ICON_X, POS_TEMP_ICON_Y, PIC_TEMP_X, PIC_TEMP_Y, gImage_pic_temp1, WHITE);
+  EPD_ShowPicture(POS_HUMI_ICON_X, POS_HUMI_ICON_Y, PIC_HUMI_X, PIC_HUMI_Y, gImage_pic_humi, WHITE);
+  EPD_Display(ImageBW);
+  EPD_Update();
+}
+
 void setup() {
   Serial.begin(115200);
 
@@ -44,7 +52,10 @@ void setup() {
   digitalWrite(DISPLAY_POWER_PIN, HIGH);
 
   if (!connectWiFiWithBackoff(WIFI_MAX_RETRIES)) {
-    esp_deep_sleep_start();
+    while (true) {
+      delay(5000);
+      connectWiFiWithBackoff(WIFI_MAX_RETRIES);
+    }
   }
 
   syncTimeFromNTP();
@@ -60,18 +71,35 @@ void setup() {
   EPD_Display(ImageBW);
   EPD_Clear_R26H(ImageBW);
   EPD_Update();
+  drawStaticElements();
   Update_Display(); 
 }
 
 void loop() {
+  static unsigned long lastWeatherUpdate = 0;
+  static unsigned long lastFullRefresh = 0;
+  unsigned long now = millis();
+
   ensureWiFiConnected();
   syncTimeFromNTP();
+
+  if (now - lastFullRefresh >= FULL_REFRESH_INTERVAL_MS) {
+    EPD_Clear();
+    EPD_Update();
+    Paint_NewImage(ImageBW, EPD_W, EPD_H, 0, WHITE);
+    Paint_Clear(WHITE);
+    drawStaticElements();
+    lastFullRefresh = now;
+  }
+
+  if (now - lastWeatherUpdate >= WEATHER_UPDATE_INTERVAL_MS) {
+    jsonBuffer = httpGETRequest(serverPath.c_str());
+    js_analysis();
+    lastWeatherUpdate = now;
+  }
+
   Update_Display();
-  jsonBuffer = httpGETRequest(serverPath.c_str());
-  js_analysis();
-  EPD_Sleep();
-  esp_sleep_enable_timer_wakeup(DEEP_SLEEP_DURATION_US);
-  esp_deep_sleep_start();
+  delay(UPDATE_INTERVAL_MS);
 }
 
 void clear_all() {
@@ -94,14 +122,17 @@ void Update_Display() {
   Serial.print("Current time: ");
   Serial.println(asctime(timeinfo));
 
-  static char buff1[20];
-  static char buff2[20];
-  char buffer[40];
+  static char buff1[40];
+  static char buff2[40];
+  char buffer[80];
   sprintf(buff2, "%02d:%02d", timeinfo->tm_hour, timeinfo->tm_min);
   sprintf(buff1, "%02d-%02d-%04d", timeinfo->tm_mday, timeinfo->tm_mon + 1, timeinfo->tm_year + 1900);
 
   const char *daysOfWeek[] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
   const char *dayOfWeek = daysOfWeek[timeinfo->tm_wday];
+
+  Paint_NewImage(ImageBW, EPD_W, EPD_H, 0, WHITE);
+  Paint_Clear(WHITE);
 
   EPD_DrawLine(0, POS_DIVIDER_Y, EPD_W, POS_DIVIDER_Y, BLACK);
   EPD_ShowPicture(POS_TEMP_ICON_X, POS_TEMP_ICON_Y, PIC_TEMP_X, PIC_TEMP_Y, gImage_pic_temp1, WHITE);
@@ -112,10 +143,10 @@ void Update_Display() {
   EPD_ShowString(POS_DAY_X, POS_DAY_Y, dayOfWeek, FONT_DAY_SIZE, BLACK);
 
   memset(buffer, 0, sizeof(buffer));
-  snprintf(buffer, sizeof(buffer), "%s C", temperature);
+  snprintf(buffer, sizeof(buffer), "%s C", temperature.c_str());
   EPD_ShowString(POS_TEMP_TEXT_X, POS_TEMP_TEXT_Y, buffer, FONT_WEATHER_SIZE, BLACK);
   memset(buffer, 0, sizeof(buffer));
-  snprintf(buffer, sizeof(buffer), "%s %", humidity);
+  snprintf(buffer, sizeof(buffer), "%s %%", humidity.c_str());
   EPD_ShowString(POS_HUMI_TEXT_X, POS_HUMI_TEXT_Y, buffer, FONT_WEATHER_SIZE, BLACK);
   Serial.println("* * * * * * The screen time display has been refreshed * * * * * *");
 
@@ -169,5 +200,3 @@ String httpGETRequest(const char* serverName) {
   http.end();
   return payload;
 }
-
-</ARG>
