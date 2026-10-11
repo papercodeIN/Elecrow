@@ -28,7 +28,7 @@ String city_js;
 String serverPath = "http://api.openweathermap.org/data/2.5/weather?q=" WEATHER_CITY "," WEATHER_COUNTRY_CODE "&APPID=" OPENWEATHERMAP_API_KEY "&units=metric";
 
 void syncTimeFromNTP() {
-  configTime(TIMEZONE_OFFSET_SEC, 0, NTP_SERVER);
+  configTime(0, 0, NTP_SERVER);
   delay(3000);
   time_t now = time(nullptr);
   if (now < NTP_MIN_VALID_TIME) {
@@ -112,34 +112,58 @@ void clear_all() {
 void Update_Display() {
   time_t t;
   time(&t);
-  struct tm *timeinfo = localtime(&t);
-  if (timeinfo == NULL) {
-    Serial.println("Failed to get time");
-    return;
-  }
+
+  time_t ist_time = t + (long)TIMEZONE_IST_OFFSET_SEC;
+  struct tm ist_tm;
+  gmtime_r(&ist_time, &ist_tm);
+
+  time_t london_time = t + (long)TIMEZONE_LONDON_OFFSET_SEC;
+  struct tm london_tm;
+  gmtime_r(&london_time, &london_tm);
+
   Serial.println("----------The screen time display is about to refresh----------");
   delay(1000);
-  Serial.print("Current time: ");
-  Serial.println(asctime(timeinfo));
+  Serial.print("IST: ");
+  Serial.println(asctime(&ist_tm));
+  Serial.print("London: ");
+  Serial.println(asctime(&london_tm));
 
-  static char buff1[40];
-  static char buff2[40];
+  int ist_hour = ist_tm.tm_hour;
+  const char *ist_ampm = (ist_hour >= 12) ? "PM" : "AM";
+  if (ist_hour > 12) ist_hour -= 12;
+  if (ist_hour == 0) ist_hour = 12;
+
+  int london_hour = london_tm.tm_hour;
+  const char *london_ampm = (london_hour >= 12) ? "PM" : "AM";
+  if (london_hour > 12) london_hour -= 12;
+  if (london_hour == 0) london_hour = 12;
+
+  static char buff_ist[40];
+  static char buff_london[40];
+  static char buff_date[40];
   char buffer[80];
-  sprintf(buff2, "%02d:%02d", timeinfo->tm_hour, timeinfo->tm_min);
-  sprintf(buff1, "%02d-%02d-%04d", timeinfo->tm_mday, timeinfo->tm_mon + 1, timeinfo->tm_year + 1900);
+  sprintf(buff_ist, "%02d:%02d", ist_hour, ist_tm.tm_min);
+  sprintf(buff_london, "%02d:%02d", london_hour, london_tm.tm_min);
+  sprintf(buff_date, "%02d-%02d-%04d", ist_tm.tm_mday, ist_tm.tm_mon + 1, ist_tm.tm_year + 1900);
 
   const char *daysOfWeek[] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
-  const char *dayOfWeek = daysOfWeek[timeinfo->tm_wday];
+  const char *dayOfWeek = daysOfWeek[ist_tm.tm_wday];
 
   Paint_NewImage(ImageBW, EPD_W, EPD_H, 0, WHITE);
   Paint_Clear(WHITE);
 
   EPD_DrawLine(0, POS_DIVIDER_Y, EPD_W, POS_DIVIDER_Y, BLACK);
+  EPD_DrawLine(POS_DIVIDER_X, POS_CLOCK_DIVIDER_TOP, POS_DIVIDER_X, POS_CLOCK_DIVIDER_BOTTOM, BLACK);
   EPD_ShowPicture(POS_TEMP_ICON_X, POS_TEMP_ICON_Y, PIC_TEMP_X, PIC_TEMP_Y, gImage_pic_temp1, WHITE);
   EPD_ShowPicture(POS_HUMI_ICON_X, POS_HUMI_ICON_Y, PIC_HUMI_X, PIC_HUMI_Y, gImage_pic_humi, WHITE);
 
-  EPD_ShowString(POS_DATE_X, POS_DATE_Y, buff1, FONT_DATE_SIZE, BLACK);
-  EPD_ShowString(POS_TIME_X, POS_TIME_Y, buff2, FONT_TIME_SIZE, BLACK);
+  EPD_ShowString(POS_DATE_X, POS_DATE_Y, buff_date, FONT_DATE_SIZE, BLACK);
+  EPD_ShowString(POS_IST_LABEL_X, POS_IST_LABEL_Y, "IST", FONT_LABEL_SIZE, BLACK);
+  EPD_ShowString(POS_UKT_LABEL_X, POS_UKT_LABEL_Y, "UKT", FONT_LABEL_SIZE, BLACK);
+  EPD_ShowString(POS_TIME_IST_X, POS_TIME_IST_Y, buff_ist, FONT_TIME_SIZE, BLACK);
+  EPD_ShowString(POS_TIME_LONDON_X, POS_TIME_LONDON_Y, buff_london, FONT_TIME_SIZE, BLACK);
+  EPD_ShowString(POS_AMPM_IST_X, POS_AMPM_IST_Y, ist_ampm, FONT_AMPM_SIZE, BLACK);
+  EPD_ShowString(POS_AMPM_LONDON_X, POS_AMPM_LONDON_Y, london_ampm, FONT_AMPM_SIZE, BLACK);
   EPD_ShowString(POS_DAY_X, POS_DAY_Y, dayOfWeek, FONT_DAY_SIZE, BLACK);
 
   memset(buffer, 0, sizeof(buffer));
