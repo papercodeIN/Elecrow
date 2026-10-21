@@ -50,14 +50,27 @@ board variant `boards/esp32-s3-devkitc1-n4r8.json` is required - the stock
 7. Click the checkmark to build. Click the right-arrow to upload. Use the plug icon to open Serial Monitor at **115200** baud.
 8. Start the PC server in a separate VS Code terminal (**Terminal → New Terminal**) with `./server/run.ps1` and leave it running.
 
-If the PlatformIO toolbar is missing, open the Command Palette and run **PlatformIO: Home**. You can also build and upload from the terminal:
+If the PlatformIO toolbar is missing, open the Command Palette and run **PlatformIO: Home**.
 
-```powershell
-python -m platformio run -e crowpanel_7
-python -m platformio run -e crowpanel_7 -t upload --upload-port COM4
-```
+## Build and flash firmware directly (Windows)
 
-Replace `COM4` with the COM port shown for your display. The included `flash.ps1` can also build, ask for the port, and upload for you.
+1. Open a terminal in this project folder (the folder containing `platformio.ini`).
+2. Build the firmware:
+
+   ```powershell
+   python -m platformio run -e crowpanel_7
+   ```
+
+3. Connect the display to the **CH340 UART USB port** and check its COM port in **PlatformIO → Devices** or Windows Device Manager.
+4. Upload the firmware, replacing `COM4` with the correct port:
+
+   ```powershell
+   python -m platformio run -e crowpanel_7 -t upload --upload-port COM4
+   ```
+
+5. To read startup messages, open the PlatformIO Serial Monitor and set its speed to **115200**.
+
+The first build downloads the required tools and libraries and may take a few minutes. You can also run `./flash.ps1`; it builds the firmware and prompts for the COM port. Use the UART port, not the native USB port: GPIO19/20 are used by the touch controller.
 
 ## Quick start (Windows)
 
