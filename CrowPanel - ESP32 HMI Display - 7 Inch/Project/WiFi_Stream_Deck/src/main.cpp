@@ -699,7 +699,7 @@ static void build_header_and_tabs(lv_obj_t *scr) {
     lv_obj_center(tn_lab);
 #else
     lv_obj_t *title = lv_label_create(header);
-    lv_label_set_text(title, "Stream Deck");
+    lv_label_set_text(title, "WiFi Stream Deck");
     lv_obj_set_style_text_color(title, lv_color_hex(0xD3ECD8), 0);
     lv_obj_set_style_text_font(title, &lv_font_montserrat_24, 0);
     lv_obj_align(title, LV_ALIGN_LEFT_MID, 8, 0);
@@ -972,7 +972,7 @@ static void halt_with_screen(const char *msg) {
 void setup() {
     Serial.begin(115200);
     delay(500);
-    Serial.println("\n=== CrowPanel Stream Deck boot ===");
+    Serial.println("\n=== WiFi Stream Deck boot ===");
 
     backlight_init();
 

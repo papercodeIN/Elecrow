@@ -51,7 +51,7 @@ def client(paths) -> TestClient:
 
 def test_root_lists_actions(client):
     body = client.get("/").json()
-    assert body["service"] == "streamdeck"
+    assert body["service"] == "wifi-stream-deck"
     assert body["actions"] == ["ping"]
     assert body["features"]["diary"] is False
     assert body["auth_required"] is False

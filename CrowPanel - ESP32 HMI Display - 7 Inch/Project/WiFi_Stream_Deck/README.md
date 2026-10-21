@@ -1,6 +1,6 @@
-# Fusion Deck 7
+# WiFi Stream Deck
 
-A DIY Stream Deck for **Fusion Automate**, running on the **Elecrow CrowPanel 7" ESP32-S3** (800x480 RGB panel,
+A DIY WiFi-based Stream Deck for **Fusion Automate**, running on the **Elecrow CrowPanel 7" ESP32-S3** (800x480 RGB panel,
 GT911 touch). The panel draws a 4x4 tile grid in LVGL and POSTs
 `{"key": "<id>"}` over WiFi to a small companion HTTP server, which runs the
 mapped shell command.

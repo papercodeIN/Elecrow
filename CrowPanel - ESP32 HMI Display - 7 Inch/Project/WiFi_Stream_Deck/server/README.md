@@ -1,4 +1,4 @@
-# Fusion Deck 7 server
+# WiFi Stream Deck server
 
 Companion HTTP dispatcher for the CrowPanel firmware. See the
 [project README](../README.md) for setup; this file is the API reference.

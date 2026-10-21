@@ -31,7 +31,7 @@ DEFAULT_TIMEOUT = 10.0
 MAX_OUTPUT = 2000
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-log = logging.getLogger("streamdeck")
+log = logging.getLogger("wifi_stream_deck")
 
 # Mirror to a file so taps can be audited without keeping the console open.
 try:
@@ -41,7 +41,7 @@ try:
 except OSError:
     pass
 
-app = FastAPI(title="esp32-streamdeck server")
+app = FastAPI(title="WiFi Stream Deck server")
 
 _state: dict[str, bool] = {}
 _state_lock = threading.Lock()
@@ -273,7 +273,7 @@ def _require_diary() -> Path:
 def root():
     cfg = get_config()
     return {
-        "service": "streamdeck",
+        "service": "wifi-stream-deck",
         "actions": sorted(load_actions()),
         "features": {"diary": bool((cfg.get("diary") or {}).get("enabled", False))},
         "auth_required": bool(_auth_token()),
