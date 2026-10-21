@@ -39,6 +39,26 @@ board variant `boards/esp32-s3-devkitc1-n4r8.json` is required - the stock
   rectangles blitted straight into the live framebuffer, VSYNC-aligned
 - FastAPI + PyYAML on the server; no database
 
+## Open in VS Code (Windows)
+
+1. Install **Visual Studio Code**.
+2. In VS Code, open **Extensions** and install **PlatformIO IDE**.
+3. Choose **File → Open Folder** and select this `WiFi_Stream_Deck` folder — the one containing `platformio.ini`.
+4. Wait for PlatformIO to finish installing the ESP32 tools and libraries. This can take a few minutes the first time.
+5. Copy `include/secrets.h.example` to `include/secrets.h` and enter your WiFi name, password, and the PC's local network IP address. Do not use `localhost` for `SERVER_HOST`.
+6. Connect the display using its **CH340 UART** USB port, not the native USB port. In VS Code, open **PlatformIO → Devices** to find the COM port, then select it in the PlatformIO toolbar.
+7. Click the checkmark to build. Click the right-arrow to upload. Use the plug icon to open Serial Monitor at **115200** baud.
+8. Start the PC server in a separate VS Code terminal (**Terminal → New Terminal**) with `./server/run.ps1` and leave it running.
+
+If the PlatformIO toolbar is missing, open the Command Palette and run **PlatformIO: Home**. You can also build and upload from the terminal:
+
+```powershell
+python -m platformio run -e crowpanel_7
+python -m platformio run -e crowpanel_7 -t upload --upload-port COM4
+```
+
+Replace `COM4` with the COM port shown for your display. The included `flash.ps1` can also build, ask for the port, and upload for you.
+
 ## Quick start (Windows)
 
 ```powershell
