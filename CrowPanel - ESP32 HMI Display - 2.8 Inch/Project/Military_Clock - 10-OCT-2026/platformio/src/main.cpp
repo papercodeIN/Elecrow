@@ -2,22 +2,33 @@
 #include <WiFi.h>
 #include <TFT_eSPI.h>
 #include <time.h>
+#include <esp_sntp.h>
 #include "secrets.h"
 
-const char* NTP_SERVER = "pool.ntp.org";
+const char* NTP_SERVERS[] = {"time.google.com", "pool.ntp.org", "time.cloudflare.com"};
 const long IST_OFFSET_SECONDS = 19800;
+constexpr uint32_t WIFI_BACKOFF_MIN_MS = 2000;
+constexpr uint32_t WIFI_BACKOFF_MAX_MS = 60000;
+constexpr uint32_t NTP_REQUEST_TIMEOUT_MS = 20000;
+constexpr uint32_t NTP_RETRY_MS = 30000;
+constexpr uint32_t NTP_RESYNC_MS = 6UL * 60UL * 60UL * 1000UL;
+constexpr time_t VALID_TIME_EPOCH = 1704067200;
 
 TFT_eSPI tft = TFT_eSPI();
-TFT_eSprite timeSprite = TFT_eSprite(&tft);
 
-#define BG_COLOR      0x0000
-#define ARMY_GREEN    0x4E45
-#define ARMY_AMBER    0xFD20
-#define DIM_GREEN     0x2D44
-#define GRID_COLOR    0x1221
-#define HEADER_BG     0x1221
+#define BG_COLOR      0x0861
+#define ARMY_GREEN    0x07FF
+#define ARMY_AMBER    0xFDE0
+#define DIM_GREEN     0x3D7A
+#define GRID_COLOR    0x19A5
+#define HEADER_BG     0x10A3
+#define PANEL_BG      0x10A3
+#define WHITE_COLOR   0xFFFF
+#define GOOD_COLOR    0x07E0
+#define BAD_COLOR     0xF800
 
 #define USE_12H_FORMAT  1
+#define CLOCK_SHOW_SECONDS 0
 
 const uint8_t SEGMENT_MAP[10] = {
   0x3F, 0x06, 0x5B, 0x4F, 0x66,
@@ -27,10 +38,36 @@ const uint8_t SEGMENT_MAP[10] = {
 const char* dayNames[] = {"SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"};
 const char* monthNames[] = {"JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"};
 
-int lastMin = -1;
+enum class SyncState : uint8_t {
+  ConnectingWifi,
+  SyncingTime,
+  Synced,
+  SyncFailed,
+  OfflineCached,
+  OfflineNoTime
+};
+
+int lastSecond = -1;
+int lastProgressFill = -1;
 bool ntpSynced = false;
 bool use12h = true;
-String ipAddress = "";
+bool wifiWasConnected = false;
+bool hasCachedTime = false;
+uint32_t wifiRetryDelayMs = WIFI_BACKOFF_MIN_MS;
+uint32_t nextWifiAttemptMs = 0;
+uint32_t nextNtpAttemptMs = 0;
+uint32_t lastNtpSyncMs = 0;
+time_t lastNtpSyncEpoch = 0;
+uint32_t ntpRequestStartedMs = 0;
+bool ntpWasEverSynced = false;
+volatile bool ntpSyncEvent = false;
+SyncState syncState = SyncState::ConnectingWifi;
+String ipAddress = "NO WIFI";
+
+void onTimeSync(struct timeval *timeInfo) {
+  (void)timeInfo;
+  ntpSyncEvent = true;
+}
 
 void drawHSegment(TFT_eSprite &spr, int x, int y, int len, int thick, uint32_t color) {
   for (int t = 0; t < thick; t++) {
@@ -84,102 +121,162 @@ void drawTftColon(int x, int y, int h, int dotSize, uint32_t color) {
   tft.fillRect(x, y + 3 * quarter - dotSize / 2, dotSize, dotSize, color);
 }
 
+const char* syncStateText();
+void drawStatusHeader();
+
 void drawHeader() {
-  tft.fillRect(0, 0, 320, 28, HEADER_BG);
-  tft.drawFastHLine(0, 28, 320, ARMY_GREEN);
-  tft.drawFastHLine(0, 29, 320, ARMY_GREEN);
-
-  const int headerTextY = 5;
-
-  tft.setFreeFont(&FreeMono9pt7b);
-  tft.setTextDatum(TL_DATUM);
-  if (ntpSynced) {
-    tft.setTextColor(ARMY_GREEN, HEADER_BG);
-    tft.drawString("NTP:OK", 6, headerTextY);
-  } else {
-    tft.setTextColor(ARMY_AMBER, HEADER_BG);
-    tft.drawString("NTP:WAIT", 6, headerTextY);
-  }
-
+  tft.fillRect(0, 0, 320, 30, HEADER_BG);
+  tft.fillRect(0, 29, 320, 2, ARMY_GREEN);
   tft.setTextColor(ARMY_GREEN, HEADER_BG);
   tft.setFreeFont(&FreeSansBold9pt7b);
-  tft.setTextDatum(MC_DATUM);
-  tft.drawString("TIME", 170, 14);
-
+  tft.setTextDatum(TL_DATUM);
+  tft.drawString("CHRONO", 10, 7);
   tft.setTextColor(ARMY_AMBER, HEADER_BG);
   tft.setFreeFont(&FreeMono9pt7b);
   tft.setTextDatum(TR_DATUM);
-  tft.drawString(use12h ? "12H" : "24H", 314, headerTextY);
+  tft.drawString(use12h ? "12H" : "24H", 310, 7);
+  drawStatusHeader();
+}
+
+void drawStatusHeader() {
+  const bool wifiConnected = WiFi.status() == WL_CONNECTED;
+  tft.fillRect(103, 3, 100, 24, HEADER_BG);
+  tft.fillCircle(113, 15, 4, wifiConnected ? GOOD_COLOR : ARMY_AMBER);
+  tft.setFreeFont(&FreeMono9pt7b);
+  tft.setTextDatum(ML_DATUM);
+  tft.setTextColor(wifiConnected ? GOOD_COLOR : ARMY_AMBER, HEADER_BG);
+  tft.drawString(wifiConnected ? "WIFI" : "NO WIFI", 122, 15);
+  tft.fillRect(207, 3, 107, 24, HEADER_BG);
+  tft.fillCircle(216, 15, 4, ntpSynced ? GOOD_COLOR : ARMY_AMBER);
+  tft.setTextColor(ntpSynced ? GOOD_COLOR : ARMY_AMBER, HEADER_BG);
+  char state[16];
+  snprintf(state, sizeof(state), "%s", ntpSynced ? "NTP OK" :
+           syncState == SyncState::SyncingTime ? "SYNCING" :
+           syncState == SyncState::OfflineCached ? "CACHED" : "NO SYNC");
+  tft.drawString(state, 225, 15);
 }
 
 void drawFooter() {
-  tft.fillRect(0, 215, 320, 25, HEADER_BG);
-  tft.drawFastHLine(0, 215, 320, ARMY_GREEN);
-  tft.drawFastHLine(0, 216, 320, ARMY_GREEN);
-
+  tft.fillRect(0, 214, 320, 26, HEADER_BG);
+  tft.fillRect(0, 214, 320, 2, ARMY_GREEN);
   tft.setTextColor(DIM_GREEN, HEADER_BG);
   tft.setFreeFont(&FreeMono9pt7b);
-  tft.setTextDatum(MC_DATUM);
-  tft.drawString(ipAddress, 160, 228);
+  tft.setTextDatum(ML_DATUM);
+  tft.drawString("NETWORK", 10, 228);
+  tft.setTextColor(wifiWasConnected ? GOOD_COLOR : ARMY_AMBER, HEADER_BG);
+  tft.setTextDatum(MR_DATUM);
+  tft.drawString(ipAddress, 310, 228);
 }
 
 void drawBorder() {
-  tft.drawRect(0, 30, 320, 185, DIM_GREEN);
-  tft.drawRect(1, 31, 318, 183, DIM_GREEN);
+  tft.fillRoundRect(8, 34, 304, 174, 8, PANEL_BG);
+  tft.drawRoundRect(8, 34, 304, 174, 8, DIM_GREEN);
+  tft.drawFastVLine(160, 52, 77, GRID_COLOR);
 }
-
-long getUkOffsetSeconds(time_t utcNow);
 
 bool getZonedTimes(struct tm &istTime, struct tm &ukTime) {
-  time_t now = time(nullptr);
-  if (now < 100000) {
-    return false;
+  time_t utcNow = time(nullptr);
+  if (utcNow < VALID_TIME_EPOCH) return false;
+
+  time_t istNow = utcNow + IST_OFFSET_SECONDS;
+  if (gmtime_r(&istNow, &istTime) == nullptr) return false;
+  setenv("TZ", "GMT0BST,M3.5.0/1,M10.5.0/2", 1);
+  tzset();
+  return localtime_r(&utcNow, &ukTime) != nullptr;
+}
+
+const char* syncStateText() {
+  switch (syncState) {
+    case SyncState::ConnectingWifi: return "CONNECTING WIFI";
+    case SyncState::SyncingTime: return "SYNCING TIME";
+    case SyncState::Synced: return "SYNCED";
+    case SyncState::SyncFailed: return "SYNC FAILED";
+    case SyncState::OfflineCached: return "OFFLINE / CACHED";
+    case SyncState::OfflineNoTime: return "OFFLINE / NO TIME";
+  }
+  return "TIME ERROR";
+}
+
+void updateStatus() {
+  drawStatusHeader();
+  drawFooter();
+}
+
+void drawLastSync() {
+  drawStatusHeader();
+}
+
+void startNtpSync(uint32_t nowMs) {
+  if (WiFi.status() != WL_CONNECTED) return;
+  syncState = SyncState::SyncingTime;
+  ntpRequestStartedMs = nowMs;
+  ntpSynced = false;
+  ntpSyncEvent = false;
+  sntp_set_time_sync_notification_cb(onTimeSync);
+  configTzTime("UTC0", NTP_SERVERS[0], NTP_SERVERS[1], NTP_SERVERS[2]);
+  nextNtpAttemptMs = nowMs + NTP_REQUEST_TIMEOUT_MS;
+  Serial.println("NTP sync requested with 3 fallback servers");
+  drawStatusHeader();
+}
+
+void serviceNetwork(uint32_t nowMs) {
+  const bool connected = WiFi.status() == WL_CONNECTED;
+  if (connected != wifiWasConnected) {
+    wifiWasConnected = connected;
+    if (connected) {
+      ipAddress = WiFi.localIP().toString();
+      Serial.printf("WiFi connected: %s\n", ipAddress.c_str());
+      wifiRetryDelayMs = WIFI_BACKOFF_MIN_MS;
+      nextNtpAttemptMs = nowMs;
+      startNtpSync(nowMs);
+    } else {
+      ipAddress = "NO WIFI";
+      ntpSynced = false;
+      syncState = ntpWasEverSynced ? SyncState::OfflineCached : SyncState::OfflineNoTime;
+      nextWifiAttemptMs = nowMs + wifiRetryDelayMs;
+      wifiRetryDelayMs = min(wifiRetryDelayMs * 2, WIFI_BACKOFF_MAX_MS);
+      Serial.println("WiFi disconnected; reconnect scheduled");
+    }
+    drawHeader();
+    drawFooter();
+    updateStatus();
   }
 
-  time_t istNow = now + IST_OFFSET_SECONDS;
-  time_t ukNow = now + getUkOffsetSeconds(now);
-  gmtime_r(&istNow, &istTime);
-  gmtime_r(&ukNow, &ukTime);
-  return true;
-}
-
-long daysFromCivil(int year, unsigned month, unsigned day) {
-  year -= month <= 2;
-  const int era = (year >= 0 ? year : year - 399) / 400;
-  const unsigned yoe = (unsigned)(year - era * 400);
-  const unsigned doy = (153 * (month + (month > 2 ? -3 : 9)) + 2) / 5 + day - 1;
-  const unsigned doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
-  return era * 146097L + (long)doe - 719468L;
-}
-
-time_t utcTimestamp(int year, unsigned month, unsigned day, unsigned hour) {
-  return (time_t)(daysFromCivil(year, month, day) * 86400L + hour * 3600L);
-}
-
-int weekdayUtc(int year, unsigned month, unsigned day) {
-  long days = daysFromCivil(year, month, day);
-  return (int)((days + 4) % 7 + 7) % 7;
-}
-
-unsigned lastSundayOfMonth(int year, unsigned month) {
-  unsigned lastDay = month == 2 ? 28 : (month == 4 || month == 6 || month == 9 || month == 11 ? 30 : 31);
-  if (month == 2 && ((year % 4 == 0 && year % 100 != 0) || year % 400 == 0)) {
-    lastDay = 29;
+  if (!connected && static_cast<int32_t>(nowMs - nextWifiAttemptMs) >= 0) {
+    Serial.printf("WiFi reconnect attempt (next backoff %lu ms)\n", static_cast<unsigned long>(wifiRetryDelayMs));
+      WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+    nextWifiAttemptMs = nowMs + wifiRetryDelayMs;
+    wifiRetryDelayMs = min(wifiRetryDelayMs * 2, WIFI_BACKOFF_MAX_MS);
+    if (syncState != SyncState::OfflineCached && syncState != SyncState::OfflineNoTime) syncState = SyncState::ConnectingWifi;
+    updateStatus();
   }
 
-  int weekday = weekdayUtc(year, month, lastDay);
-  return lastDay - weekday;
+  if (connected && syncState != SyncState::SyncingTime && static_cast<int32_t>(nowMs - nextNtpAttemptMs) >= 0) startNtpSync(nowMs);
+
+  time_t current = time(nullptr);
+  if (connected && ntpSyncEvent && current >= VALID_TIME_EPOCH && syncState == SyncState::SyncingTime) {
+    ntpSyncEvent = false;
+    ntpSynced = true;
+    hasCachedTime = true;
+    ntpWasEverSynced = true;
+    lastNtpSyncEpoch = current;
+    lastNtpSyncMs = nowMs;
+    syncState = SyncState::Synced;
+    nextNtpAttemptMs = nowMs + NTP_RESYNC_MS;
+    Serial.printf("NTP time valid: %lld\n", static_cast<long long>(current));
+    drawHeader();
+    updateStatus();
+    drawLastSync();
+  } else if (connected && syncState == SyncState::SyncingTime && static_cast<int32_t>(nowMs - nextNtpAttemptMs) >= 0) {
+    ntpSynced = false;
+    syncState = ntpWasEverSynced ? SyncState::OfflineCached : SyncState::SyncFailed;
+    nextNtpAttemptMs = nowMs + NTP_RETRY_MS;
+    Serial.println("NTP sync timeout; will retry");
+    drawHeader();
+    updateStatus();
+  }
 }
 
-long getUkOffsetSeconds(time_t utcNow) {
-  struct tm utcTime;
-  gmtime_r(&utcNow, &utcTime);
-  int year = utcTime.tm_year + 1900;
-
-  time_t bstStart = utcTimestamp(year, 3, lastSundayOfMonth(year, 3), 1);
-  time_t bstEnd = utcTimestamp(year, 10, lastSundayOfMonth(year, 10), 1);
-  return (utcNow >= bstStart && utcNow < bstEnd) ? 3600 : 0;
-}
 
 void formatClockTime(struct tm &t, char *timeBuf, char *periodBuf) {
   int h = t.tm_hour;
@@ -208,16 +305,16 @@ void drawTimeColumn(int centerX, const char *label, struct tm &t, uint32_t color
     strcpy(periodBuf, isPM ? "PM" : "AM");
   }
 
-  int digitW = 22;
-  int digitH = 38;
+  int digitW = 18;
+  int digitH = 34;
   int thick = 4;
   int gap = 3;
   int colonW = 8;
   int totalW = digitW * 4 + gap * 3 + colonW;
   int x = centerX - totalW / 2;
-  int y = 61;
+  int y = 72;
 
-  tft.setTextColor(ARMY_AMBER, BG_COLOR);
+  tft.setTextColor(ARMY_AMBER, PANEL_BG);
   tft.setFreeFont(&FreeMono9pt7b);
   tft.setTextDatum(TC_DATUM);
   tft.drawString(label, centerX, 38);
@@ -227,6 +324,11 @@ void drawTimeColumn(int centerX, const char *label, struct tm &t, uint32_t color
   drawTftColon(x + digitW * 2 + gap * 2, y, digitH, 5, color);
   drawTftDigit(x + digitW * 2 + gap * 2 + colonW, y, t.tm_min / 10, digitW, digitH, thick, color);
   drawTftDigit(x + digitW * 3 + gap * 3 + colonW, y, t.tm_min % 10, digitW, digitH, thick, color);
+#if CLOCK_SHOW_SECONDS
+  drawTftColon(x + digitW * 4 + gap * 3 + colonW, y, digitH, 4, color);
+  drawTftDigit(x + digitW * 4 + gap * 3 + colonW + 6, y, t.tm_sec / 10, digitW, digitH, thick, color);
+  drawTftDigit(x + digitW * 5 + gap * 3 + colonW + 6, y, t.tm_sec % 10, digitW, digitH, thick, color);
+#endif
 
   if (use12h) {
     tft.setTextColor(ARMY_AMBER, BG_COLOR);
@@ -237,142 +339,119 @@ void drawTimeColumn(int centerX, const char *label, struct tm &t, uint32_t color
 }
 
 void renderTime(struct tm &istTime, struct tm &ukTime) {
-  tft.fillRect(2, 32, 316, 95, BG_COLOR);
-  tft.drawFastVLine(160, 38, 82, GRID_COLOR);
-  drawTimeColumn(80, "IST", istTime, ARMY_GREEN);
-  drawTimeColumn(240, "UKT", ukTime, DIM_GREEN);
+  static int prevIstHour = -1;
+  static int prevIstMinute = -1;
+  static int prevUkHour = -1;
+  static int prevUkMinute = -1;
+  if (prevIstHour == istTime.tm_hour && prevIstMinute == istTime.tm_min &&
+      prevUkHour == ukTime.tm_hour && prevUkMinute == ukTime.tm_min) return;
+  tft.fillRect(12, 53, 296, 77, PANEL_BG);
+  tft.drawFastVLine(160, 52, 77, GRID_COLOR);
+  tft.drawFastHLine(20, 52, 280, GRID_COLOR);
+  drawTimeColumn(85, "IST", istTime, ARMY_GREEN);
+  drawTimeColumn(235, "UK", ukTime, ARMY_GREEN);
+  prevIstHour = istTime.tm_hour;
+  prevIstMinute = istTime.tm_min;
+  prevUkHour = ukTime.tm_hour;
+  prevUkMinute = ukTime.tm_min;
 }
 
 void renderDate(struct tm &t) {
-  tft.fillRect(10, 130, 300, 35, BG_COLOR);
+  tft.fillRect(15, 132, 290, 38, PANEL_BG);
 
-  tft.setTextColor(ARMY_AMBER, BG_COLOR);
+  tft.setTextColor(DIM_GREEN, PANEL_BG);
   tft.setFreeFont(&FreeMono9pt7b);
   tft.setTextDatum(TC_DATUM);
-  tft.drawString(dayNames[t.tm_wday], 160, 132);
+  tft.drawString(dayNames[t.tm_wday], 160, 138);
 
-  tft.setTextColor(ARMY_GREEN, BG_COLOR);
+  tft.setTextColor(WHITE_COLOR, PANEL_BG);
   tft.setFreeFont(&FreeSansBold9pt7b);
   tft.setTextDatum(TC_DATUM);
 
   char dateBuf[32];
   sprintf(dateBuf, "%02d %s %04d", t.tm_mday, monthNames[t.tm_mon], t.tm_year + 1900);
-  tft.drawString(dateBuf, 160, 152);
+  tft.drawString(dateBuf, 160, 158);
 }
 
 void renderProgressBar(struct tm &t) {
-  int barY = 170;
-  int barH = 8;
-  int barW = 280;
-  int barX = 20;
-
-  float progress = (t.tm_hour * 3600 + t.tm_min * 60 + t.tm_sec) / 86400.0;
-  int fillW = (int)(barW * progress);
+  const int barY = 180;
+  const int barH = 7;
+  const int barW = 260;
+  const int barX = 30;
+  const uint32_t seconds = static_cast<uint32_t>(t.tm_hour * 3600 + t.tm_min * 60 + t.tm_sec);
+  const int fillW = static_cast<int>((static_cast<uint64_t>(barW) * seconds) / 86400U);
+  if (fillW == lastProgressFill) return;
+  lastProgressFill = fillW;
 
   tft.drawRect(barX - 1, barY - 1, barW + 2, barH + 2, DIM_GREEN);
   tft.fillRect(barX, barY, fillW, barH, ARMY_GREEN);
   tft.fillRect(barX + fillW, barY, barW - fillW, barH, GRID_COLOR);
 
-  tft.setTextColor(DIM_GREEN, BG_COLOR);
+  tft.setTextColor(ARMY_AMBER, PANEL_BG);
   tft.setFreeFont(&FreeMono9pt7b);
   tft.setTextDatum(TC_DATUM);
-
   char pctBuf[8];
-  sprintf(pctBuf, "%d%%", (int)(progress * 100));
-  tft.fillRect(130, 182, 60, 16, BG_COLOR);
-  tft.drawString(pctBuf, 160, 185);
+  snprintf(pctBuf, sizeof(pctBuf), "%d%%", static_cast<int>((seconds * 100ULL) / 86400ULL));
+  tft.fillRect(130, 190, 60, 15, PANEL_BG);
+  tft.drawString(pctBuf, 160, 193);
 }
 
 void setup() {
   Serial.begin(115200);
-  delay(1000);
-  Serial.println("Boot...");
-
+  Serial.println("Booting WiFi clock");
   use12h = USE_12H_FORMAT;
-  Serial.printf("Time format: %s (config)\n", use12h ? "12H" : "24H");
 
   pinMode(27, OUTPUT);
   ledcSetup(0, 5000, 8);
   ledcAttachPin(27, 0);
   ledcWrite(0, 200);
-  Serial.println("Backlight on (PWM 78%)");
-
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-  int attempts = 0;
-  while (WiFi.status() != WL_CONNECTED && attempts < 40) {
-    delay(500);
-    attempts++;
-  }
-
-  if (WiFi.status() == WL_CONNECTED) {
-    ipAddress = WiFi.localIP().toString();
-    Serial.printf("WiFi connected! IP: %s\n", ipAddress.c_str());
-    configTime(0, 0, NTP_SERVER);
-    struct tm t;
-    if (getLocalTime(&t, 10000)) {
-      ntpSynced = true;
-    }
-  } else {
-    ipAddress = "NO WIFI";
-    Serial.printf("WiFi connection failed! Status: %d\n", (int)WiFi.status());
-  }
-
-  WiFi.setTxPower(WIFI_POWER_MINUS_1dBm);
-  Serial.println("WiFi TX power reduced");
 
   tft.init();
-  Serial.println("TFT init done");
   tft.invertDisplay(false);
   tft.setRotation(1);
-  Serial.printf("TFT W=%d H=%d rotation=%d\n", tft.width(), tft.height(), tft.getRotation());
   tft.fillScreen(BG_COLOR);
-  delay(100);
-  Serial.println("TFT config done");
-
-  timeSprite.createSprite(320, 100);
-  Serial.println("Time sprite created");
-
   drawHeader();
   drawBorder();
   drawFooter();
-  Serial.println("UI drawn");
+  updateStatus();
+  drawLastSync();
+
+  WiFi.mode(WIFI_STA);
+  WiFi.setAutoReconnect(false);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  nextWifiAttemptMs = millis() + WIFI_BACKOFF_MIN_MS;
+  nextNtpAttemptMs = millis();
+  syncState = SyncState::ConnectingWifi;
+  Serial.printf("Connecting to WiFi SSID: %s\n", WIFI_SSID);
+}
+
+void loop() {
+  const uint32_t nowMs = millis();
+  serviceNetwork(nowMs);
 
   struct tm istTime;
   struct tm ukTime;
   if (getZonedTimes(istTime, ukTime)) {
+    hasCachedTime = true;
+    if (lastSecond != istTime.tm_sec) {
+      renderProgressBar(istTime);
+      lastSecond = istTime.tm_sec;
+    }
     renderTime(istTime, ukTime);
-    renderDate(istTime);
-    renderProgressBar(istTime);
-    lastMin = istTime.tm_min;
+    static int lastDateDay = -1;
+    if (lastDateDay != istTime.tm_yday) {
+      renderDate(istTime);
+      lastDateDay = istTime.tm_yday;
+    }
+  } else if (syncState != SyncState::ConnectingWifi && syncState != SyncState::SyncingTime && syncState != SyncState::SyncFailed) {
+    syncState = SyncState::OfflineNoTime;
+    updateStatus();
   }
 
-  Serial.println("Setup completed successfully!");
-}
-
-void loop() {
-  struct tm istTime;
-  struct tm ukTime;
-  if (!getZonedTimes(istTime, ukTime)) {
-    delay(1000);
-    return;
+  static uint32_t lastUptimeUpdateMs = 0;
+  if (nowMs - lastUptimeUpdateMs >= 60000) {
+    lastUptimeUpdateMs = nowMs;
+    drawStatusHeader();
   }
-
-  bool wasSynced = ntpSynced;
-  if (!ntpSynced) {
-    ntpSynced = true;
-  }
-
-  if (ntpSynced != wasSynced) {
-    drawHeader();
-  }
-
-  if (lastMin == -1 || istTime.tm_min != lastMin) {
-    renderTime(istTime, ukTime);
-    renderDate(istTime);
-    renderProgressBar(istTime);
-    lastMin = istTime.tm_min;
-  }
-
-  delay(1000);
+  delay(20);
 }
