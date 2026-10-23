@@ -9,6 +9,8 @@ A Wi-Fi-connected digital clock for the Elecrow 2.8-inch ESP32 HMI display. The 
 
 The PlatformIO source is the reference implementation. When updating the UI or firmware, update the Arduino sketch to match; do not make unrelated changes to the PlatformIO source.
 
+![Digital Clock running on the CrowPanel display](clock.jpg)
+
 ## Hardware and software
 
 - Elecrow CrowPanel ESP32 HMI, 2.8-inch, 240 × 320 ILI9341 display
