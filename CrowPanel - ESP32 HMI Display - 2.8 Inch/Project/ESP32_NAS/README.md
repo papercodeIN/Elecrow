@@ -52,6 +52,8 @@ ESP32_NAS/
 | Display | 320×240 ILI9341V TFT (landscape, rotation 1) |
 | SD Slot | Built-in microSD (SPI bus) |
 
+> **✅ Tested with PlatformIO** — built and flashed via PlatformIO on real hardware (32 GB FAT32 microSD): SD mount, LCD status screens, web UI upload/download, and folder creation all verified working. An Arduino IDE sketch is provided as well, but PlatformIO is the recommended/tested build path.
+
 ### Pin Mapping (verified from factory source)
 
 | Function | GPIO | SPI Bus | Notes |
