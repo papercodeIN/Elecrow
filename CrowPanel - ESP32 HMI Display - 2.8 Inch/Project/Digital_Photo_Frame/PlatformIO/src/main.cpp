@@ -232,6 +232,8 @@ void loop() {
                 currentScreen = SCREEN_SLIDESHOW;
                 showCurrentPhoto();
                 lastSlideChangeTime = millis();
+            } else if (sdMounted && photoPlaylist.empty() && currentScreen == SCREEN_NO_PHOTOS) {
+                drawNoPhotosScreen();
             }
 
             if (!otaReady) {
@@ -252,6 +254,9 @@ void loop() {
         otaReady = false;
         currentIP = "";
         Serial.println("[WIFI] Connection lost, will retry...");
+        if (sdMounted && photoPlaylist.empty() && currentScreen == SCREEN_NO_PHOTOS) {
+            drawNoPhotosScreen();
+        }
     }
 
     // 6. Slideshow Engine
@@ -397,30 +402,72 @@ void drawAPScreen() {
 }
 
 void drawNoPhotosScreen() {
-    tft.fillScreen(0x0841);
+    const uint16_t BG     = 0x0841;
+    const uint16_t BAND   = 0x18E3;
+    const uint16_t CARD   = 0x10A2;
+    const uint16_t EDGE   = 0x2965;
+    const uint16_t ACCENT = 0x07FF;
+    const uint16_t MUTED  = 0x9CF3;
 
-    tft.fillRect(0, 0, SCREEN_WIDTH, 44, 0x18E3);
-    tft.setTextColor(0x3DFE, 0x18E3);
-    tft.drawCentreString("NO PHOTOS ON CARD", SCREEN_WIDTH / 2, 10, 2);
+    tft.fillScreen(BG);
+    tft.fillRect(0, 0, SCREEN_WIDTH, 4, ACCENT);
 
-    tft.fillRoundRect(20, 60, SCREEN_WIDTH - 40, 130, 8, 0x10A2);
-    tft.drawRoundRect(20, 60, SCREEN_WIDTH - 40, 130, 8, 0x2965);
+    // Title
+    tft.setTextColor(TFT_WHITE, BG);
+    tft.drawCentreString("NO PHOTOS", SCREEN_WIDTH / 2, 20, 4);
+    tft.setTextColor(MUTED, BG);
+    tft.drawCentreString("SD card is mounted and ready", SCREEN_WIDTH / 2, 52, 2);
 
-    tft.setTextColor(TFT_WHITE, 0x10A2);
-    tft.drawCentreString("SD card is mounted and ready!", SCREEN_WIDTH / 2, 74, 1);
+    // Address card
+    int cardX = 24, cardY = 78, cardW = SCREEN_WIDTH - 48, cardH = 72;
+    tft.fillRoundRect(cardX, cardY, cardW, cardH, 10, CARD);
+    tft.drawRoundRect(cardX, cardY, cardW, cardH, 10, ACCENT);
 
-    tft.setTextColor(0x07FF, 0x10A2);
-    tft.drawCentreString("Upload photos via browser:", SCREEN_WIDTH / 2, 102, 1);
+    tft.setTextColor(ACCENT, CARD);
+    tft.drawCentreString("OPEN IN YOUR BROWSER", SCREEN_WIDTH / 2, cardY + 8, 2);
 
-    tft.setTextColor(TFT_GREEN, 0x10A2);
-    String url = "http://" + (wifiConnected ? currentIP : String("192.168.4.1"));
-    tft.drawCentreString(url.c_str(), SCREEN_WIDTH / 2, 124, 2);
+    String host;
+    if (apMode) {
+        host = WiFi.softAPIP().toString();
+    } else if (wifiConnected && currentIP.length() > 0) {
+        host = currentIP;
+    } else {
+        host = "";
+    }
 
-    tft.setTextColor(0x9CF3, 0x10A2);
-    tft.drawCentreString("Supported: JPEG, PNG, BMP", SCREEN_WIDTH / 2, 158, 1);
+    if (host.length() == 0) {
+        tft.setTextColor(MUTED, CARD);
+        tft.drawCentreString("Wi-Fi connecting...", SCREEN_WIDTH / 2, cardY + 36, 2);
+    } else {
+        String url = "http://" + host;
+        uint8_t urlFont = 2;
+        uint8_t urlSize = 1;
+        tft.setTextSize(2);
+        if (tft.textWidth(url, urlFont) <= cardW - 12) {
+            urlSize = 2;
+        } else {
+            tft.setTextSize(1);
+            urlFont = 4;
+            if (tft.textWidth(url, urlFont) > cardW - 12) {
+                urlFont = 2;
+            }
+        }
+        tft.setTextSize(urlSize);
+        int charH = (urlFont == 4) ? 26 : (16 * urlSize);
+        int urlY = cardY + (cardH - charH) / 2 + 6;
+        tft.setTextColor(TFT_YELLOW, CARD);
+        tft.drawCentreString(url.c_str(), SCREEN_WIDTH / 2, urlY, urlFont);
+        tft.setTextSize(1);
+    }
 
-    tft.setTextColor(0x52AA, 0x0841);
-    tft.drawCentreString("Drag and drop images onto the web page", SCREEN_WIDTH / 2, 214, 1);
+    // Compact footer
+    tft.setTextColor(MUTED, BG);
+    tft.drawCentreString("JPEG  /  PNG  /  BMP", SCREEN_WIDTH / 2, 168, 2);
+
+    if (apMode) {
+        tft.setTextColor(TFT_GREEN, BG);
+        tft.drawCentreString((String("Wi-Fi: ") + AP_SSID).c_str(), SCREEN_WIDTH / 2, 196, 2);
+    }
 }
 
 void drawUnreadablePhotoScreen(const char* filename) {
@@ -637,26 +684,44 @@ void showCurrentPhoto() {
         introShown = true;
         tft.fillScreen(0x0841);
         tft.fillRect(0, 0, SCREEN_WIDTH, 6, 0x07FF);
+
         tft.setTextColor(TFT_WHITE, 0x0841);
         tft.drawCentreString("FRAME READY", SCREEN_WIDTH / 2, 16, 4);
         tft.setTextColor(0x9CF3, 0x0841);
-        tft.drawCentreString("OPEN THE PHOTO DASHBOARD", SCREEN_WIDTH / 2, 53, 1);
+        tft.drawCentreString("OPEN THE PHOTO DASHBOARD", SCREEN_WIDTH / 2, 46, 2);
 
-        tft.fillRoundRect(20, 76, SCREEN_WIDTH - 40, 86, 10, 0x10A2);
-        tft.drawRoundRect(20, 76, SCREEN_WIDTH - 40, 86, 10, 0x07FF);
-        tft.setTextColor(0x07FF, 0x10A2);
-        tft.drawCentreString("ADDRESS", SCREEN_WIDTH / 2, 85, 1);
-        String url = "http://" + (apMode ? WiFi.softAPIP().toString() : currentIP);
-        if (url == "http://") url = "CONNECT TO WI-FI";
+        // Address card
+        int cardX = 20, cardY = 74, cardW = SCREEN_WIDTH - 40, cardH = 76;
+        tft.fillRoundRect(cardX, cardY, cardW, cardH, 10, 0x10A2);
+        tft.drawRoundRect(cardX, cardY, cardW, cardH, 10, 0x07FF);
+
+        String host = apMode ? WiFi.softAPIP().toString() : currentIP;
+        String url = host.length() > 0 ? ("http://" + host) : String("CONNECT TO WI-FI");
+
+        uint8_t urlFont = 2;
+        uint8_t urlSize = 1;
+        tft.setTextSize(2);
+        if (tft.textWidth(url, urlFont) <= cardW - 12) {
+            urlSize = 2;
+        } else {
+            tft.setTextSize(1);
+            urlFont = 4;
+            if (tft.textWidth(url, urlFont) > cardW - 12) {
+                urlFont = 2;
+            }
+        }
+        tft.setTextSize(urlSize);
+
+        int charH = (urlFont == 4) ? 26 : (16 * urlSize);
+        int urlY = cardY + (cardH - charH) / 2;
         tft.setTextColor(TFT_YELLOW, 0x10A2);
-        tft.drawCentreString(url.c_str(), SCREEN_WIDTH / 2, 108, url.length() > 18 ? 2 : 4);
+        tft.drawCentreString(url.c_str(), SCREEN_WIDTH / 2, urlY, urlFont);
+        tft.setTextSize(1);
 
         tft.setTextColor(TFT_WHITE, 0x0841);
-        tft.drawCentreString("Use a phone or computer on the same Wi-Fi", SCREEN_WIDTH / 2, 177, 1);
-        tft.setTextColor(0x07FF, 0x0841);
-        tft.drawCentreString("DIGITAL PHOTO FRAME  |  FUSION AUTOMATE", SCREEN_WIDTH / 2, 202, 1);
+        tft.drawCentreString("Use a device on the same Wi-Fi", SCREEN_WIDTH / 2, 162, 2);
         tft.setTextColor(0x9CF3, 0x0841);
-        tft.drawCentreString("Slideshow starting...", SCREEN_WIDTH / 2, 220, 1);
+        tft.drawCentreString("Slideshow starting...", SCREEN_WIDTH / 2, 184, 2);
         delay(5000);
     }
 

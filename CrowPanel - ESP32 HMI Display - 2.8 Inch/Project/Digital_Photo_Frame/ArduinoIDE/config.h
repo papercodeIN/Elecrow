@@ -31,9 +31,9 @@
 #define AP_SSID             "PhotoFrame-Setup"
 #define AP_PASS             ""          // Open AP for captive portal
 #define WIFI_HOSTNAME       "esp32-photoframe"
-#define MAX_WIFI_FAIL       10          // Connect attempts before fallback
-#define WIFI_CONNECT_TIMEOUT 60000      // 60s timeout
-#define WIFI_RETRY_INTERVAL  15000      // Retry STA reconnect every 15s
+#define MAX_WIFI_FAIL       3           // Connect attempts before fallback (was 10)
+#define WIFI_CONNECT_TIMEOUT 15000      // 15s timeout (was 60s)
+#define WIFI_RETRY_INTERVAL  5000       // Retry STA reconnect every 5s (was 15s)
 
 #if __has_include("secrets.h")
 #include "secrets.h"

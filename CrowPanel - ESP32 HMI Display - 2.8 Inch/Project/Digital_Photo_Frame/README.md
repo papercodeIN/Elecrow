@@ -66,7 +66,7 @@ The display and microSD card slot use **two completely independent hardware SPI 
 
 2. **Photo Management & Thumbnail Gallery**
    - Live photo grid showing all stored images with dimensions/file size.
-   - Gallery thumbnails are generated during upload, stored on the SD card, and loaded on demand to keep gallery browsing responsive.
+   - Gallery thumbnails are generated in the browser during upload, then uploaded as `.thumb.jpg` files alongside the photo.
    - **"Display on Screen"** button: instantly jump the physical display to any photo.
    - Individual photo deletion and single-click **"Delete All"** with confirmation dialog.
 
@@ -93,7 +93,7 @@ The display and microSD card slot use **two completely independent hardware SPI 
 6. **WiFi & Fallback Setup Portal**
    - Automatically attempts connection to configured WiFi in Station mode.
    - If WiFi credentials are unset or the network is unavailable, starts SoftAP (`PhotoFrame-Setup`) with a captive portal (`http://192.168.4.1`).
-   - WiFi credentials stored securely in NVS Preferences.
+   - WiFi credentials are stored in NVS Preferences (not encrypted at rest).
 
 ---
 
@@ -158,9 +158,9 @@ Digital_Photo_Frame/
 
 Alternatively, use the VS Code integrated terminal with the `PlatformIO/` folder as the working directory and run `pio run`, `pio run -t upload`, or `pio device monitor -b 115200`.
 
-### Option 2: Arduino IDE (Not tested)
+### Option 2: Arduino IDE (Reference only)
 
-> **Untested:** The Arduino IDE instructions below are provided as a reference only. This workflow has not been verified; the tested workflow is VS Code with PlatformIO.
+> **Reference only:** The Arduino IDE sketch in `ArduinoIDE/` is a legacy mirror and is **not maintained in lockstep** with the PlatformIO build. It may lack recent fixes. Use PlatformIO for any production deployment.
 
 1. Open Arduino IDE (v2.x recommended).
 2. Install the **esp32** board package:
@@ -221,10 +221,11 @@ The original 2.8-inch PlatformIO target and Arduino IDE configuration above rema
      WIFI SETUP REQUIRED
      1. Connect to WiFi Access Point:
         PhotoFrame-Setup
+        (password: photoframe)
      2. Open Browser & Configure Home WiFi:
         http://192.168.4.1
      ```
-4. Connect your smartphone, laptop, or tablet to the **`PhotoFrame-Setup`** network (no password required).
+4. Connect your smartphone, laptop, or tablet to the **`PhotoFrame-Setup`** network using the password **`photoframe`** (shown on the screen). Set `AP_PASS` to `""` in `config.h` if you want an open AP instead.
 5. Open your browser and navigate to `http://192.168.4.1` (or tap the captive portal notification).
 6. Click **WiFi Setup**, select or enter your home WiFi SSID and Password, then click **Save & Connect**.
 7. The photo frame saves the credentials to NVS and reboots into your home network.
@@ -259,6 +260,40 @@ The original 2.8-inch PlatformIO target and Arduino IDE configuration above rema
 | **WebP** | `.webp` | Automatically normalized and converted into Baseline JPEG on upload via Web Dashboard. |
 
 ---
+
+## Upload & Multi-Photo Behaviour
+
+- Selecting several photos uploads them **one at a time, sequentially**; the frame rescans `/photos/` after every file.
+- Only one upload is allowed at a time; a second tab/device receives `HTTP 409`.
+- With auto-convert enabled, every photo generates a second request for its `.thumb.jpg`.
+- Re-uploading an existing filename replaces it.
+- Uploads stream straight from HTTP into the SD card; a stalled client is recovered after 20 s.
+
+## Security & Production Deployment
+
+| Item | Default | Recommendation |
+|------|---------|----------------|
+| Setup AP (`PhotoFrame-Setup`) | WPA2, password `photoframe` | Set `AP_PASS` to `""` for an open AP, or a site-specific password. |
+| Web dashboard / API | No authentication | Set `WEB_AUTH_USER`/`WEB_AUTH_PASS` in `secrets.h` (git-ignored) to enable HTTP Basic auth. |
+| OTA updates | ArduinoOTA, no password | Add `ArduinoOTA.setPassword(...)` if OTA is used in production. |
+| WiFi credentials at rest | NVS Preferences, plaintext | Avoid reusing a sensitive password. |
+| Network placement | Home LAN | Do not expose port 80/3232 to the internet. |
+
+### Production checklist
+
+- [ ] Flash from the `PlatformIO/` folder.
+- [ ] Boot log shows `[SD] Write test passed`.
+- [ ] SD card is FAT32, 8 GB or smaller, with a `/photos` folder.
+- [ ] Home WiFi credentials saved via the setup portal (or seeded via `secrets.h`).
+- [ ] `secrets.h` is not committed (git-ignored).
+
+## Troubleshooting
+
+- **No access point appears.** Station mode retries 3 times (15 s + 3 x 5 s) before falling back. Wait ~30 s.
+- **`[UPLOAD] Short SD write: 0 of N bytes`.** Card rejected the data; replace or reformat (FAT32).
+- **`HTTP 409` on upload.** Another tab/device is uploading.
+- **No-photos screen shows wrong address.** It reflects the current connection state.
+- **Arduino IDE build differs.** Use PlatformIO; the Arduino sketch is reference-only.
 
 ## Technical Architecture & Memory Footprint
 
