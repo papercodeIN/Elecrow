@@ -4,6 +4,19 @@ An end-to-end, high-performance Digital Photo Frame running on the **Elecrow 2.8
 
 ---
 
+## Photo Gallery
+
+Sample photos for the 2.8-inch Digital Photo Frame are in [`Photos/`](Photos/). They are shown below as an at-a-glance gallery; click any image to open the full-size file.
+
+| | | |
+|:---:|:---:|:---:|
+| [![Sample photo 1](Photos/20261026_140444.jpg)](Photos/20261026_140444.jpg) | [![Sample photo 2](Photos/20261026_140455.jpg)](Photos/20261026_140455.jpg) | [![Sample photo 3](Photos/20261026_140514.jpg)](Photos/20261026_140514.jpg) |
+| [![Sample photo 4](Photos/20261026_140518.jpg)](Photos/20261026_140518.jpg) | [![Sample photo 5](Photos/20261026_140524.jpg)](Photos/20261026_140524.jpg) | [![Sample photo 6](Photos/20261026_140539.jpg)](Photos/20261026_140539.jpg) |
+
+The original HEIC files are preserved alongside JPEG versions for easy viewing in GitHub and use with the photo-frame firmware.
+
+---
+
 ## Hardware Overview
 
 | Component | Specification |
