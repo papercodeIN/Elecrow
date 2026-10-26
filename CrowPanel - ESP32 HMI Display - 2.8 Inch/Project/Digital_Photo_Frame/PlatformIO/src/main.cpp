@@ -154,7 +154,7 @@ void setup() {
 
     if (sdMounted) {
         scanPhotos();
-        if (photoPlaylist.size() > 0 && (wifiConnected || apMode)) {
+        if (photoPlaylist.size() > 0 && wifiConnected) {
             advanceSlide(true);
         } else if (photoPlaylist.size() > 0) {
             // Photos exist but WiFi is not ready yet: keep the boot/connecting
@@ -264,7 +264,7 @@ void loop() {
     }
 
     // 6. Slideshow Engine
-    if (sdMounted && photoPlaylist.size() > 0 && (wifiConnected || apMode)) {
+    if (sdMounted && photoPlaylist.size() > 0 && wifiConnected) {
         bool shouldChange = false;
 
         if (forcePhotoName.length() > 0) {
