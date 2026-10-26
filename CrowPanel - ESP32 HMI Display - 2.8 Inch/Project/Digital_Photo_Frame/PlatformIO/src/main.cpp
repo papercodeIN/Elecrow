@@ -154,8 +154,12 @@ void setup() {
 
     if (sdMounted) {
         scanPhotos();
-        if (photoPlaylist.size() > 0) {
+        if (photoPlaylist.size() > 0 && (wifiConnected || apMode)) {
             advanceSlide(true);
+        } else if (photoPlaylist.size() > 0) {
+            // Photos exist but WiFi is not ready yet: keep the boot/connecting
+            // screen and let the loop start the slideshow once WiFi is up.
+            currentScreen = SCREEN_BOOT;
         } else {
             currentScreen = SCREEN_NO_PHOTOS;
             drawNoPhotosScreen();
@@ -260,7 +264,7 @@ void loop() {
     }
 
     // 6. Slideshow Engine
-    if (sdMounted && photoPlaylist.size() > 0) {
+    if (sdMounted && photoPlaylist.size() > 0 && (wifiConnected || apMode)) {
         bool shouldChange = false;
 
         if (forcePhotoName.length() > 0) {
@@ -1008,10 +1012,10 @@ void startAPMode() {
 
     Serial.printf("[WIFI] SoftAP Active! SSID: '%s', IP: %s\n", AP_SSID, currentIP.c_str());
 
-    if (!sdMounted || photoPlaylist.empty()) {
-        currentScreen = SCREEN_AP_SETUP;
-        drawAPScreen();
-    }
+    // In AP mode there is no home WiFi, so never run the slideshow: show the setup
+    // screen so the user can configure credentials.
+    currentScreen = SCREEN_AP_SETUP;
+    drawAPScreen();
 }
 
 void handleWiFiReconnect() {
