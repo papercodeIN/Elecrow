@@ -143,29 +143,20 @@ Digital_Photo_Frame/
 
 **Development and testing:** This project was tested in Visual Studio Code using the PlatformIO extension and build workflow.
 
-### Option 1: PlatformIO (Recommended)
+### Option 1: PlatformIO in Visual Studio Code (Recommended)
 
-1. Open a terminal in the `PlatformIO/` directory:
-   ```bash
-   cd "Project/Digital_Photo_Frame/PlatformIO"
-   ```
-2. *(Optional)* If you want to hardcode your home Wi-Fi credentials for first boot:
-   ```bash
-   cp include/secrets.h.example include/secrets.h
-   # Edit DEFAULT_SSID and DEFAULT_PASS in include/secrets.h
-   ```
-3. Build the project:
-   ```bash
-   pio run
-   ```
-4. Connect the Elecrow 2.8" board via USB-C and flash:
-   ```bash
-   pio run -t upload
-   ```
-5. Open Serial Monitor at 115200 baud:
-   ```bash
-   pio device monitor -b 115200
-   ```
+1. Install **Visual Studio Code** and the **PlatformIO IDE** extension from the Extensions view.
+2. In VS Code, select **File → Open Folder...** and open this project's `PlatformIO/` folder. The project root is the folder containing `platformio.ini`.
+3. Wait for PlatformIO to initialize the project and install its configured platform and libraries. If prompted, allow it to finish before building.
+4. *(Optional)* Set default Wi-Fi credentials for first boot:
+   - Copy `include/secrets.h.example` to `include/secrets.h`.
+   - Edit `DEFAULT_SSID` and `DEFAULT_PASS` in `include/secrets.h`.
+   - Keep `secrets.h` local; it is excluded from Git.
+5. Build the firmware using the PlatformIO toolbar's **Build** button (checkmark), or open **PlatformIO: Project Tasks → esp32dev → General → Build**.
+6. Connect the Elecrow 2.8-inch board over USB. Select the detected serial port in PlatformIO if needed, then click **Upload** (right-arrow) or choose **PlatformIO: Project Tasks → esp32dev → General → Upload**.
+7. To view startup and diagnostic logs, open **PlatformIO: Project Tasks → esp32dev → General → Monitor**. The serial monitor runs at **115200 baud**.
+
+Alternatively, use the VS Code integrated terminal with the `PlatformIO/` folder as the working directory and run `pio run`, `pio run -t upload`, or `pio device monitor -b 115200`.
 
 ### Option 2: Arduino IDE
 
