@@ -13,7 +13,7 @@ Sample photos for the 2.8-inch Digital Photo Frame are in [`Photos/`](Photos/). 
 | [![Sample photo 1](Photos/20261026_140444.webp)](Photos/20261026_140444.webp) | [![Sample photo 2](Photos/20261026_140455.webp)](Photos/20261026_140455.webp) | [![Sample photo 3](Photos/20261026_140514.webp)](Photos/20261026_140514.webp) |
 | [![Sample photo 4](Photos/20261026_140518.webp)](Photos/20261026_140518.webp) | [![Sample photo 5](Photos/20261026_140524.webp)](Photos/20261026_140524.webp) | [![Sample photo 6](Photos/20261026_140539.webp)](Photos/20261026_140539.webp) |
 
-The original HEIC files are preserved alongside WebP versions for easy viewing in GitHub and use with the photo-frame firmware.
+The photos are provided as optimized WebP files for quick loading in the README gallery.
 
 ---
 
