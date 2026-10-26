@@ -10,10 +10,10 @@ Sample photos for the 2.8-inch Digital Photo Frame are in [`Photos/`](Photos/). 
 
 | | | |
 |:---:|:---:|:---:|
-| [![Sample photo 1](Photos/20261026_140444.jpg)](Photos/20261026_140444.jpg) | [![Sample photo 2](Photos/20261026_140455.jpg)](Photos/20261026_140455.jpg) | [![Sample photo 3](Photos/20261026_140514.jpg)](Photos/20261026_140514.jpg) |
-| [![Sample photo 4](Photos/20261026_140518.jpg)](Photos/20261026_140518.jpg) | [![Sample photo 5](Photos/20261026_140524.jpg)](Photos/20261026_140524.jpg) | [![Sample photo 6](Photos/20261026_140539.jpg)](Photos/20261026_140539.jpg) |
+| [![Sample photo 1](Photos/20261026_140444.webp)](Photos/20261026_140444.webp) | [![Sample photo 2](Photos/20261026_140455.webp)](Photos/20261026_140455.webp) | [![Sample photo 3](Photos/20261026_140514.webp)](Photos/20261026_140514.webp) |
+| [![Sample photo 4](Photos/20261026_140518.webp)](Photos/20261026_140518.webp) | [![Sample photo 5](Photos/20261026_140524.webp)](Photos/20261026_140524.webp) | [![Sample photo 6](Photos/20261026_140539.webp)](Photos/20261026_140539.webp) |
 
-The original HEIC files are preserved alongside JPEG versions for easy viewing in GitHub and use with the photo-frame firmware.
+The original HEIC files are preserved alongside WebP versions for easy viewing in GitHub and use with the photo-frame firmware.
 
 ---
 
@@ -140,6 +140,8 @@ Digital_Photo_Frame/
 ---
 
 ## Build and Flash Instructions
+
+**Development and testing:** This project was tested in Visual Studio Code using the PlatformIO extension and build workflow.
 
 ### Option 1: PlatformIO (Recommended)
 
