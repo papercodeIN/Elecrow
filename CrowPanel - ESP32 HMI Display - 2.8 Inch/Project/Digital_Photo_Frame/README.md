@@ -27,6 +27,9 @@ The original HEIC files are preserved alongside JPEG versions for easy viewing i
 | **Storage** | Built-in microSD Card Slot (FAT32, dedicated VSPI bus) |
 | **Network** | 2.4 GHz 802.11 b/g/n Wi-Fi (Station mode + SoftAP Captive Portal) |
 
+**Display product page:** [Elecrow 2.8-inch ESP32 Miner LCD Display](https://www.elecrow.com/2-8inch-esp32-miner-lcd-display-2pcs-cryptocurrency-solo-miner-with-1000kh-s-hashrate.html)  
+**Product wiki:** [2-Pack 2.8-inch ESP32 Solo Miner LCD Display](https://www.elecrow.com/pub/wiki/2-PACK-2.8inch-ESP32-Solo-Miner-LCD-Display-Cryptocurrency-Solo-Miner.html)
+
 ### Complete Pin Mapping (Verified Hardware Baseline)
 
 The display and microSD card slot use **two completely independent hardware SPI buses**, eliminating bus contention and chip select collisions:
