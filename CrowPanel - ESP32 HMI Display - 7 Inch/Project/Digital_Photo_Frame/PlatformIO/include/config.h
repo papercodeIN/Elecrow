@@ -1,0 +1,115 @@
+#ifndef CONFIG_H
+#define CONFIG_H
+
+#include <Arduino.h>
+
+// ============================================================
+// Display hardware pinout (selected per PlatformIO environment)
+// ============================================================
+#if !defined(DISPLAY_BACKEND_LOVYANGFX)
+#error "This firmware targets only the CrowPanel 7-inch ESP32-S3 RGB display."
+#endif
+
+#define SD_MOSI             11
+#define SD_MISO             13
+#define SD_SCK              12
+#define SD_CS               10
+#define SD_SPI_SPEED        4000000
+#define TFT_BL              2
+#define SCREEN_WIDTH        800
+#define SCREEN_HEIGHT       480
+
+// ============================================================
+// WiFi Configuration
+// ============================================================
+#define AP_SSID             "PhotoFrame-Setup"
+#define AP_PASS             ""          // Open AP for captive portal
+#define WIFI_HOSTNAME       "esp32-photoframe"
+#define MAX_WIFI_FAIL       10          // Connect attempts before fallback
+#define WIFI_CONNECT_TIMEOUT 60000      // 60s timeout
+#define WIFI_RETRY_INTERVAL  15000      // Retry STA reconnect every 15s
+
+#if __has_include("secrets.h")
+#include "secrets.h"
+#define HAS_DEFAULT_CREDENTIALS 1
+#else
+#define DEFAULT_SSID ""
+#define DEFAULT_PASS ""
+#define HAS_DEFAULT_CREDENTIALS 0
+#endif
+
+#ifndef OTA_PASSWORD
+#define OTA_PASSWORD ""
+#endif
+
+// ============================================================
+// NVS Storage & Preferences Keys
+// ============================================================
+#define PREF_WIFI_NS        "pf_wifi"
+#define PREF_SETTINGS_NS    "pf_config"
+
+#define PREF_KEY_SSID       "ssid"
+#define PREF_KEY_PASS       "pass"
+
+#define PREF_KEY_INTERVAL   "interval"    // uint32_t (seconds)
+#define PREF_KEY_ORDER      "order"       // uint8_t (0: Sequential, 1: Shuffle)
+#define PREF_KEY_FIT        "fit"         // uint8_t (0: Letterbox, 1: Crop/Fill, 2: Auto)
+#define PREF_KEY_TRANSITION "trans"       // uint8_t (0: Instant, 1..11: Effects, 12: Auto Random)
+#define PREF_KEY_PAUSED     "paused"      // uint8_t (0: Playing, 1: Paused)
+#define PREF_KEY_BRIGHTNESS "bright"      // uint8_t (0–255, default 255 = full)
+
+// ============================================================
+// Slideshow Defaults
+// ============================================================
+#define DEFAULT_INTERVAL_SEC 5
+#define DEFAULT_ORDER_MODE   0           // 0 = Sequential, 1 = Shuffle
+#define DEFAULT_FIT_MODE     0           // Letterbox: show the whole photo, black bars where needed
+#define DEFAULT_TRANSITION   12          // 12 = Auto (Random transition effect every slide)
+#define DEFAULT_BRIGHTNESS   255         // 255 = Full brightness (max)
+#define MAX_PHOTOS_PLAYLIST  512         // Maximum photos tracked in playlist
+#define PHOTO_DIR            "/photos"   // Dedicated folder for photos on SD
+
+// ============================================================
+// Web Server & Polling Timings
+// ============================================================
+#define HTTP_PORT           80
+#define SD_POLL_INTERVAL    1000        // Check SD status every 1s (fast re-mount after boot)
+#define SD_RETRY_ANIM_MS    400         // Localized SD error blink
+
+// ============================================================
+// Transition Animation Timings
+// ============================================================
+#define TRANS_WIPE_STEP       16
+#define TRANS_WIPE_DELAY_MS   4
+#define TRANS_BLINDS_STEPS    20
+#define TRANS_BLINDS_DELAY_MS 4
+#define TRANS_CURTAIN_STEP    8
+#define TRANS_CURTAIN_DELAY_MS 6
+#define TRANS_BOX_STEPS       60
+#define TRANS_BOX_STEP_INC    4
+#define TRANS_BOX_DELAY_MS    6
+#define TRANS_CHECKER_SIZE    40
+#define TRANS_CHECKER_DELAY_MS 8
+#define TRANS_CHECKER_PAUSE_MS 15
+#define TRANS_FADE_PASSES     4
+#define TRANS_FADE_DELAY_MS   12
+
+// ============================================================
+// Watchdog Timer
+// ============================================================
+#define WDT_TIMEOUT_MS      8000        // Watchdog timeout (8 seconds)
+#define WDT_FEED_INTERVAL   1000        // Feed watchdog every 1s
+
+// ============================================================
+// Logging Levels (compile-time filtering)
+// ============================================================
+// 0 = None, 1 = Error, 2 = Warn, 3 = Info, 4 = Debug
+#define LOG_LEVEL           3
+
+#define LOG_ERROR(...)      do { if (LOG_LEVEL >= 1) Serial.printf("[ERR] " __VA_ARGS__); } while(0)
+#define LOG_WARN(...)       do { if (LOG_LEVEL >= 2) Serial.printf("[WRN] " __VA_ARGS__); } while(0)
+#define LOG_INFO(...)       do { if (LOG_LEVEL >= 3) Serial.printf("[INF] " __VA_ARGS__); } while(0)
+#define LOG_DEBUG(...)      do { if (LOG_LEVEL >= 4) Serial.printf("[DBG] " __VA_ARGS__); } while(0)
+
+#endif // CONFIG_H
+
