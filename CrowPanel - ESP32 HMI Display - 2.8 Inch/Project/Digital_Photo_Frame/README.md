@@ -158,7 +158,9 @@ Digital_Photo_Frame/
 
 Alternatively, use the VS Code integrated terminal with the `PlatformIO/` folder as the working directory and run `pio run`, `pio run -t upload`, or `pio device monitor -b 115200`.
 
-### Option 2: Arduino IDE
+### Option 2: Arduino IDE (Not tested)
+
+> **Untested:** The Arduino IDE instructions below are provided as a reference only. This workflow has not been verified; the tested workflow is VS Code with PlatformIO.
 
 1. Open Arduino IDE (v2.x recommended).
 2. Install the **esp32** board package:
