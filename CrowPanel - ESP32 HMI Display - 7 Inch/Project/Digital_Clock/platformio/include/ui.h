@@ -25,15 +25,13 @@ extern "C" {
 #include "ui_helpers.h"
 #include "ui_events.h"
 
+#include <stdbool.h>
+
 // SCREEN: ui_Screen1
 void ui_Screen1_screen_init(void);
 extern lv_obj_t * ui_Screen1;
-extern lv_obj_t * ui_ISTLabel;
-extern lv_obj_t * ui_TimeLabel;
-extern lv_obj_t * ui_UKLabel;
-extern lv_obj_t * ui_UKTimeLabel;
-extern lv_obj_t * ui_DateLabel;
 extern lv_obj_t * ui_DayLabel;
+extern lv_obj_t * ui_DateLabel;
 extern lv_obj_t * ui_StatusLabel;
 extern lv_obj_t * ui_BrightnessUpBtn;
 extern lv_obj_t * ui_BrightnessUpLabel;
@@ -44,6 +42,27 @@ extern lv_obj_t * ui_ThemeLabel;
 extern lv_obj_t * ui_FormatBtn;
 extern lv_obj_t * ui_FormatLabel;
 extern lv_obj_t * ui_TimeArea;
+
+// CHRONO dashboard widgets
+extern lv_obj_t * ui_WifiDot;
+extern lv_obj_t * ui_WifiLabel;
+extern lv_obj_t * ui_NtpDot;
+extern lv_obj_t * ui_NtpLabel;
+extern lv_obj_t * ui_FormatIndicator;
+extern lv_obj_t * ui_IpLabel;
+extern lv_obj_t * ui_DayBarFill;
+extern lv_obj_t * ui_PctLabel;
+extern lv_obj_t * ui_AmPmIst;
+extern lv_obj_t * ui_AmPmUk;
+extern lv_obj_t * ui_PanelFrame;
+extern lv_obj_t * ui_IstColLabel;
+extern lv_obj_t * ui_UkColLabel;
+extern lv_obj_t * ui_HeaderAccent;
+extern lv_obj_t * ui_FooterAccent;
+extern lv_obj_t * ui_IstDigits[4][7];
+extern lv_obj_t * ui_UkDigits[4][7];
+extern lv_obj_t * ui_IstColon[2];
+extern lv_obj_t * ui_UkColon[2];
 
 // Global variables for interactive features
 extern int currentTheme;
@@ -58,11 +77,19 @@ void ui_event_ThemeChange(lv_event_t * e);
 void ui_event_FormatToggle(lv_event_t * e);
 void ui_event_TimeTouch(lv_event_t * e);
 
-// Function to update clock display
-void updateClockDisplay(const char* istTime, const char* ukTime, const char* date, const char* day);
+// Seven-segment / dashboard update API (called from main.ino)
+void ui_update_time_columns(int istHour, int istMin, const char *istAmPm,
+                            int ukHour, int ukMin, const char *ukAmPm);
+void ui_blank_time_columns(void);
+void ui_set_colons_visible(bool visible);
+void ui_set_ampm_visible(bool visible);
+void ui_update_date(const char *day, const char *date);
+void ui_update_day_progress(int pct);
+void ui_update_network(bool wifiUp, bool ntpOk, const char *state, const char *ip);
+void ui_apply_accent(uint32_t color);
 
 // Interactive function declarations
-void applyWhiteTheme();
+void applyTechTheme();
 void increaseBrightness();
 void decreaseBrightness();
 void changeColorTheme();
@@ -70,7 +97,6 @@ void toggleTimeFormat();
 void showTimeDetails();
 void hideButtons();
 void showButtons();
-void updateStatusMessage(const char* message);
 // CUSTOM VARIABLES
 
 // EVENTS
