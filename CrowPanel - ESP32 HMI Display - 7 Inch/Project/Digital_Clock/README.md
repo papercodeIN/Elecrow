@@ -2,14 +2,14 @@
 
 A Wi-Fi-connected dual-timezone digital clock for the Elecrow **CrowPanel 7-inch ESP32-S3 HMI** (800 × 480 RGB panel, GT911 touch). The CHRONO dashboard shows Indian Standard Time (IST) and UK local time (with exact British Summer Time transitions), the date, a day-progress bar, and live Wi-Fi/NTP status — with a bright seven-segment display and a configurable accent color.
 
-<!-- PHOTOS: replace clock.jpg (in the Digital_Clock folder, one level up) with a real photo of your device. The two close-ups live in platformio/photos/. -->
+<!-- PHOTOS: the main photo is clock.webp in this folder. The two close-ups live in platformio/photos/. Replace the files (same names) and this README updates automatically. -->
 
-![CrowPanel 7-inch running the CHRONO clock](../clock.jpg)
+![CrowPanel 7-inch running the CHRONO clock](clock.webp)
 
 <table>
 <tr>
-<td><img src="photos/ui-closeup.jpg" alt="CHRONO UI close-up" width="390"></td>
-<td><img src="photos/wiring.jpg" alt="Wiring and power" width="390"></td>
+<td><img src="platformio/photos/ui-closeup.jpg" alt="CHRONO UI close-up" width="390"></td>
+<td><img src="platformio/photos/wiring.jpg" alt="Wiring and power" width="390"></td>
 </tr>
 </table>
 
@@ -29,11 +29,11 @@ A Wi-Fi-connected dual-timezone digital clock for the Elecrow **CrowPanel 7-inch
 - Elecrow CrowPanel ESP32-S3 HMI, 7-inch, 800 × 480 RGB display, GT911 touch
 - USB data cable and a **2.4 GHz** Wi-Fi network (the ESP32-S3 cannot see 5 GHz networks)
 - Visual Studio Code with the PlatformIO IDE extension
-- Pinned dependencies: LovyanGFX 1.1.12, LVGL 8.3.11; vendored libraries in `lib/` (PCA9557 IO expander for V3.0 touch timing, patched TAMC_GT911)
+- Pinned dependencies: LovyanGFX 1.1.12, LVGL 8.3.11; vendored libraries in `platformio/lib/` (PCA9557 IO expander for V3.0 touch timing, patched TAMC_GT911)
 
 ## Configure Wi-Fi
 
-Copy `include/secrets.example.h` to `include/secrets.h`, then set:
+Copy `platformio/include/secrets.example.h` to `platformio/include/secrets.h`, then set:
 
 ```c
 const char* WIFI_SSID     = "YourNetwork";
@@ -49,8 +49,8 @@ If you have never used PlatformIO before, follow this from scratch:
 1. **Install Visual Studio Code** — download it from <https://code.visualstudio.com> and install with the default options.
 2. **Install the PlatformIO extension** — open VS Code, click the **Extensions** icon in the left sidebar (four squares), search for `PlatformIO IDE`, and click **Install**. Wait until the alien PlatformIO icon appears in the left sidebar (first install can take a few minutes).
 3. **Download this project** — click **Code → Download ZIP** on GitHub, or run `git clone https://github.com/papercodeIN/Elecrow.git`, then find this folder on disk.
-4. **Open the project** — in VS Code choose **File → Open Folder…** and select *this* `platformio` folder (the one containing `platformio.ini`). Do **not** open the repository root — PlatformIO must see `platformio.ini` in the folder you open.
-5. **Add your Wi-Fi credentials** — in the VS Code Explorer, right-click `include` → copy `secrets.example.h`, paste it in the same folder, rename the copy to `secrets.h`, and fill in your SSID and password. (Or skip this and use the AP portal described above.)
+4. **Open the project** — in VS Code choose **File → Open Folder…** and select the `platformio` subfolder (the one containing `platformio.ini`). Do **not** open this `Digital_Clock` folder itself — PlatformIO must see `platformio.ini` in the folder you open.
+5. **Add your Wi-Fi credentials** — in the VS Code Explorer, open `platformio/include`, copy `secrets.example.h`, paste it in the same folder, rename the copy to `secrets.h`, and fill in your SSID and password. (Or skip this and use the AP portal described above.)
 6. **Wait for the first build tools to download** — PlatformIO automatically downloads the ESP32 toolchain and the pinned libraries (LovyanGFX, LVGL) on the first build. Watch the bottom status bar; this can take several minutes on the first run.
 7. **Connect the display** — plug the CrowPanel into the PC with a USB **data** cable. If no port appears, install the USB-to-serial driver for your board and pick the port (e.g. `COM11`) in the bottom status bar.
 8. **Build** — click the **✔ (checkmark)** icon in the bottom PlatformIO toolbar (or the alien icon → *Project Tasks → Build*). The terminal should end with `SUCCESS`.
@@ -71,17 +71,18 @@ pio device monitor     # serial logs at 115200
 
 ## Project layout
 
-- `src/main.ino` — display/touch init, CHRONO network + NTP state machine, interactive features
-- `src/ui_Screen1.c`, `src/ui.c` — CHRONO dashboard UI (seven-segment widgets, panels, footer)
-- `include/` — UI headers, `lv_conf.h` (LVGL tick via `millis()`, fonts), `touch.h`, `secrets.example.h`
-- `lib/PCA9557`, `lib/TAMC_GT911` — vendored libraries (GT911 `reset()` guarded for expander-driven reset)
-- `photos/` — UI close-up and wiring photos used by this README (placeholders — replace with your own)
-- `../clock.jpg` — the main device photo shown above (placeholder — replace with a real photo)
+- `platformio/` — the PlatformIO firmware project (open this folder in VS Code)
+- `platformio/src/main.ino` — display/touch init, CHRONO network + NTP state machine, interactive features
+- `platformio/src/ui_Screen1.c`, `platformio/src/ui.c` — CHRONO dashboard UI (seven-segment widgets, panels, footer)
+- `platformio/include/` — UI headers, `lv_conf.h` (LVGL tick via `millis()`, fonts), `touch.h`, `secrets.example.h`
+- `platformio/lib/PCA9557`, `platformio/lib/TAMC_GT911` — vendored libraries (GT911 `reset()` guarded for expander-driven reset)
+- `platformio/photos/` — UI close-up and wiring photos used by this README (placeholders — replace with your own)
+- `clock.webp` — the main device photo shown above
 
 ## Customization
 
-- **Accent colors** — `changeColorTheme()` in `src/main.ino` cycles the clock color; chrome (borders/rules) stays cyan via `ui_apply_accent()` in `src/ui.c`
-- **Digit size** — `DIG_W`, `DIG_H`, `SEG_T` in `src/ui_Screen1.c`
-- **Palette** — `CHRONO_*` defines at the top of `src/ui_Screen1.c`
+- **Accent colors** — `changeColorTheme()` in `platformio/src/main.ino` cycles the clock color; chrome (borders/rules) stays cyan via `ui_apply_accent()` in `platformio/src/ui.c`
+- **Digit size** — `DIG_W`, `DIG_H`, `SEG_T` in `platformio/src/ui_Screen1.c`
+- **Palette** — `CHRONO_*` defines at the top of `platformio/src/ui_Screen1.c`
 - **Timezone** — IST offset is `IST_OFFSET_SECONDS`; UK uses the `GMT0BST,M3.5.0/1,M10.5.0/2` POSIX rule in `UK_TZ_SPEC`
-- **NTP servers / retry timing** — `NTP_SERVERS`, `WIFI_BACKOFF_*`, `NTP_*` constants in `src/main.ino`
+- **NTP servers / retry timing** — `NTP_SERVERS`, `WIFI_BACKOFF_*`, `NTP_*` constants in `platformio/src/main.ino`
