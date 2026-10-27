@@ -2,9 +2,9 @@
 
 A Wi-Fi-connected dual-timezone digital clock for the Elecrow **CrowPanel 7-inch ESP32-S3 HMI** (800 × 480 RGB panel, GT911 touch). The CHRONO dashboard shows Indian Standard Time (IST) and UK local time (with exact British Summer Time transitions), the date, a day-progress bar, and live Wi-Fi/NTP status — with a bright seven-segment display and a configurable accent color.
 
-<!-- PHOTOS: replace the files in photos/ with real photos of your device. Keep the same file names and the README updates automatically. -->
+<!-- PHOTOS: replace clock.jpg (in the Digital_Clock folder, one level up) with a real photo of your device. The two close-ups live in platformio/photos/. -->
 
-![CrowPanel 7-inch running the CHRONO clock](photos/device-front.jpg)
+![CrowPanel 7-inch running the CHRONO clock](../clock.jpg)
 
 <table>
 <tr>
@@ -75,7 +75,8 @@ pio device monitor     # serial logs at 115200
 - `src/ui_Screen1.c`, `src/ui.c` — CHRONO dashboard UI (seven-segment widgets, panels, footer)
 - `include/` — UI headers, `lv_conf.h` (LVGL tick via `millis()`, fonts), `touch.h`, `secrets.example.h`
 - `lib/PCA9557`, `lib/TAMC_GT911` — vendored libraries (GT911 `reset()` guarded for expander-driven reset)
-- `photos/` — device photos used by this README (placeholders — replace with your own)
+- `photos/` — UI close-up and wiring photos used by this README (placeholders — replace with your own)
+- `../clock.jpg` — the main device photo shown above (placeholder — replace with a real photo)
 
 ## Customization
 
