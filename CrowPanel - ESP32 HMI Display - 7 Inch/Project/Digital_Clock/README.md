@@ -2,16 +2,9 @@
 
 A Wi-Fi-connected dual-timezone digital clock for the Elecrow **CrowPanel 7-inch ESP32-S3 HMI** (800 × 480 RGB panel, GT911 touch). The CHRONO dashboard shows Indian Standard Time (IST) and UK local time (with exact British Summer Time transitions), the date, a day-progress bar, and live Wi-Fi/NTP status — with a bright seven-segment display and a configurable accent color.
 
-<!-- PHOTOS: the main photo is clock.webp in this folder. The two close-ups live in platformio/photos/. Replace the files (same names) and this README updates automatically. -->
+<!-- PHOTOS: the main photo is clock.webp in this folder. Replace the file (same name) and this README updates automatically. -->
 
 ![CrowPanel 7-inch running the CHRONO clock](clock.webp)
-
-<table>
-<tr>
-<td><img src="platformio/photos/ui-closeup.jpg" alt="CHRONO UI close-up" width="390"></td>
-<td><img src="platformio/photos/wiring.jpg" alt="Wiring and power" width="390"></td>
-</tr>
-</table>
 
 ## Features
 
@@ -76,8 +69,7 @@ pio device monitor     # serial logs at 115200
 - `platformio/src/ui_Screen1.c`, `platformio/src/ui.c` — CHRONO dashboard UI (seven-segment widgets, panels, footer)
 - `platformio/include/` — UI headers, `lv_conf.h` (LVGL tick via `millis()`, fonts), `touch.h`, `secrets.example.h`
 - `platformio/lib/PCA9557`, `platformio/lib/TAMC_GT911` — vendored libraries (GT911 `reset()` guarded for expander-driven reset)
-- `platformio/photos/` — UI close-up and wiring photos used by this README (placeholders — replace with your own)
-- `clock.webp` — the main device photo shown above
+- `clock.webp` — the main device photo shown above (replace the file with your own photo, same name)
 
 ## Customization
 
