@@ -1,0 +1,11 @@
+.pio/
+.vscode/
+tasks/
+.DS_Store
+
+# PlatformIO environment
+.env/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
