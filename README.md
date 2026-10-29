@@ -67,7 +67,8 @@ Full build and demo playlists on the [Fusion Automate YouTube channel](https://w
 
 1. Pick a project from the tables above and open its folder.
 2. Follow that project's README — each one covers hardware requirements, Wi-Fi configuration and build/flash steps (VS Code + PlatformIO or Arduino IDE).
-3. Hardware is available from [Elecrow](https://www.elecrow.com/) — new customers can use this [referral link for a $5 coupon](https://www.elecrow.com/referral-program/Nzk5MjJqMnQ/).
+3. Manufacturer documentation and official example code for the 7-inch display: [Elecrow wiki](https://www.elecrow.com/wiki/esp32-display-702727-intelligent-touch-screen-wi-fi26ble-800480-hmi-display.html) and the official [Elecrow-RD/CrowPanel-7.0-HMI-ESP32-Display-800x480](https://github.com/Elecrow-RD/CrowPanel-7.0-HMI-ESP32-Display-800x480) repository.
+4. Hardware is available from [Elecrow](https://www.elecrow.com/) — new customers can use this [referral link for a $5 coupon](https://www.elecrow.com/referral-program/Nzk5MjJqMnQ/).
 
 ## Support
 
