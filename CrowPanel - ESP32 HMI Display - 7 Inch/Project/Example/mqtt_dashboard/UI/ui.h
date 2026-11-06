@@ -46,6 +46,33 @@ extern lv_obj_t * ui_Label5;
 extern lv_obj_t * ui_Label6;
 extern lv_obj_t * ui_Label7;
 extern lv_obj_t * ui_Label8;
+void ui_event_ImgButton3(lv_event_t * e);
+extern lv_obj_t * ui_ImgButton3;
+void ui_event_ImgButton7(lv_event_t * e);
+extern lv_obj_t * ui_ImgButton7;
+// CUSTOM VARIABLES
+
+// SCREEN: ui_Screen2
+void ui_Screen2_screen_init(void);
+extern lv_obj_t * ui_Screen2;
+extern lv_obj_t * ui_Panel2;
+extern lv_obj_t * ui_Image2;
+void ui_event_ImgButton4(lv_event_t * e);
+extern lv_obj_t * ui_ImgButton4;
+void ui_event_ImgButton5(lv_event_t * e);
+extern lv_obj_t * ui_ImgButton5;
+extern lv_obj_t * ui_Slider2;
+// CUSTOM VARIABLES
+
+// SCREEN: ui_Screen3
+void ui_Screen3_screen_init(void);
+extern lv_obj_t * ui_Screen3;
+void ui_event_ImgButton8(lv_event_t * e);
+extern lv_obj_t * ui_ImgButton8;
+void ui_event_ImgButton9(lv_event_t * e);
+extern lv_obj_t * ui_ImgButton9;
+extern lv_obj_t * ui_Image7;
+extern lv_obj_t * ui_Image8;
 // CUSTOM VARIABLES
 
 // EVENTS
@@ -54,6 +81,10 @@ extern lv_obj_t * ui____initial_actions0;
 
 // IMAGES AND IMAGE SETS
 LV_IMG_DECLARE(ui_img_1163064809);    // assets/Fusion-white.png
+LV_IMG_DECLARE(ui_img_right_png);    // assets/right.png
+LV_IMG_DECLARE(ui_img_left_png);    // assets/left.png
+LV_IMG_DECLARE(ui_img_do_subscribe_png);    // assets/do_subscribe.png
+LV_IMG_DECLARE(ui_img_qr_png);    // assets/qr.png
 
 // UI INIT
 void ui_init(void);

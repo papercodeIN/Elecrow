@@ -90,6 +90,14 @@ An army-style dual-timezone digital clock with military green aesthetic and cust
 | **PlatformIO** | `Project/Military_Clock - 10-OCT-2026/platformio/` | Pin config via `build_flags` in `platformio.ini` |
 | **Arduino IDE** | `Project/Military_Clock - 10-OCT-2026/arduino/MilitaryClock/` | Requires `User_Setup.h` to be copied into TFT_eSPI library |
 
+### 2. 🧭 Android Auto–Style Turn-by-Turn Navigation Display
+
+A BLE navigation HUD: the phone runs Google Maps, a companion app (Tasker profile or the included Kotlin app) streams turn-by-turn instructions over Bluetooth, and the display shows a large maneuver arrow, the distance counting down, street names, and an instant flashing "TURN NOW" prompt with speaker chimes. Full plan, protocol, build steps, limitations, and links in its [README](Project/Android_Auto_Nav_Display/README.md).
+
+- **Firmware (PlatformIO)**: `Project/Android_Auto_Nav_Display/platformio/`
+- **PC bench tester**: `Project/Android_Auto_Nav_Display/tools/test_ble_sender.py`
+- **Companion app source**: `Project/Android_Auto_Nav_Display/android/` · no-code option: `Project/Android_Auto_Nav_Display/docs/tasker-setup.md`
+
 ---
 
 ## 🛠️ Development Environment Setup

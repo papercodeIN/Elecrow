@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AA Nav Companion</string>
+    <string name="status_intro">1. Grant notification access below.\n2. Grant Bluetooth + notification permissions.\n3. Start the service, then navigate in Google Maps.</string>
+    <string name="btn_notif_access">Grant notification access</string>
+    <string name="btn_start">Start navigation link</string>
+    <string name="btn_stop">Stop</string>
+    <string name="status_running">Service running - start navigation in Google Maps.</string>
+    <string name="status_stopped">Service stopped.</string>
+</resources>

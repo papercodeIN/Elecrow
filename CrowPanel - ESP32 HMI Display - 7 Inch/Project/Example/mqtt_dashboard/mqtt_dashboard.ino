@@ -148,10 +148,10 @@ void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
       data->state = LV_INDEV_STATE_PR;
       data->point.x = touch_last_x;
       data->point.y = touch_last_y;
-      Serial.print("Data x ");
-      Serial.println(data->point.x);
-      Serial.print("Data y ");
-      Serial.println(data->point.y);
+      // Serial.print("Data x ");
+      // Serial.println(data->point.x);
+      // Serial.print("Data y ");
+      // Serial.println(data->point.y);
     }
     else if (touch_released())
     {
@@ -308,6 +308,8 @@ void update_ui(lv_timer_t* ui_timer) {
 
   snprintf(buf, sizeof(buf), "%d", wind);
   lv_label_set_text(ui_Label4, buf);
+
+
 }
 
 

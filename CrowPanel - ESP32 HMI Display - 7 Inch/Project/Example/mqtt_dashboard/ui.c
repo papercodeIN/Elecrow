@@ -28,6 +28,34 @@ lv_obj_t * ui_Label5;
 lv_obj_t * ui_Label6;
 lv_obj_t * ui_Label7;
 lv_obj_t * ui_Label8;
+void ui_event_ImgButton3(lv_event_t * e);
+lv_obj_t * ui_ImgButton3;
+void ui_event_ImgButton7(lv_event_t * e);
+lv_obj_t * ui_ImgButton7;
+// CUSTOM VARIABLES
+
+
+// SCREEN: ui_Screen2
+void ui_Screen2_screen_init(void);
+lv_obj_t * ui_Screen2;
+lv_obj_t * ui_Panel2;
+lv_obj_t * ui_Image2;
+void ui_event_ImgButton4(lv_event_t * e);
+lv_obj_t * ui_ImgButton4;
+void ui_event_ImgButton5(lv_event_t * e);
+lv_obj_t * ui_ImgButton5;
+// CUSTOM VARIABLES
+
+
+// SCREEN: ui_Screen3
+void ui_Screen3_screen_init(void);
+lv_obj_t * ui_Screen3;
+void ui_event_ImgButton8(lv_event_t * e);
+lv_obj_t * ui_ImgButton8;
+void ui_event_ImgButton9(lv_event_t * e);
+lv_obj_t * ui_ImgButton9;
+lv_obj_t * ui_Image7;
+lv_obj_t * ui_Image8;
 // CUSTOM VARIABLES
 
 // EVENTS
@@ -46,6 +74,59 @@ lv_obj_t * ui____initial_actions0;
 ///////////////////// ANIMATIONS ////////////////////
 
 ///////////////////// FUNCTIONS ////////////////////
+void ui_event_ImgButton3(lv_event_t * e)
+{
+    lv_event_code_t event_code = lv_event_get_code(e);
+
+    if(event_code == LV_EVENT_CLICKED) {
+        _ui_screen_change(&ui_Screen2, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, &ui_Screen2_screen_init);
+    }
+}
+
+void ui_event_ImgButton7(lv_event_t * e)
+{
+    lv_event_code_t event_code = lv_event_get_code(e);
+
+    if(event_code == LV_EVENT_CLICKED) {
+        _ui_screen_change(&ui_Screen2, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, &ui_Screen2_screen_init);
+    }
+}
+
+void ui_event_ImgButton4(lv_event_t * e)
+{
+    lv_event_code_t event_code = lv_event_get_code(e);
+
+    if(event_code == LV_EVENT_CLICKED) {
+        _ui_screen_change(&ui_Screen3, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, &ui_Screen3_screen_init);
+    }
+}
+
+void ui_event_ImgButton5(lv_event_t * e)
+{
+    lv_event_code_t event_code = lv_event_get_code(e);
+
+    if(event_code == LV_EVENT_CLICKED) {
+        _ui_screen_change(&ui_Screen1, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, &ui_Screen1_screen_init);
+    }
+}
+
+void ui_event_ImgButton8(lv_event_t * e)
+{
+    lv_event_code_t event_code = lv_event_get_code(e);
+
+    if(event_code == LV_EVENT_CLICKED) {
+        _ui_screen_change(&ui_Screen1, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, &ui_Screen1_screen_init);
+    }
+}
+
+void ui_event_ImgButton9(lv_event_t * e)
+{
+    lv_event_code_t event_code = lv_event_get_code(e);
+
+    if(event_code == LV_EVENT_CLICKED) {
+        _ui_screen_change(&ui_Screen2, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, &ui_Screen2_screen_init);
+    }
+}
 
 ///////////////////// SCREENS ////////////////////
 
@@ -56,6 +137,8 @@ void ui_init(void)
                                                false, LV_FONT_DEFAULT);
     lv_disp_set_theme(dispp, theme);
     ui_Screen1_screen_init();
+    ui_Screen2_screen_init();
+    ui_Screen3_screen_init();
     ui____initial_actions0 = lv_obj_create(NULL);
     lv_disp_load_scr(ui_Screen1);
 }
